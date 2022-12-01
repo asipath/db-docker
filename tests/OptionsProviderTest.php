@@ -7,7 +7,7 @@ use Composer\Package\RootPackageInterface;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Prophet;
 use Symfony\Component\Console\Input\InputInterface;
-rtyyyy
+
 class OptionsProviderTest extends TestCase
 {
     protected $prophet;
