@@ -23,7 +23,7 @@ class OptionsProvider
      * @var array
      */
     protected $packageConfig;
-
+  sdfsf
     public function __construct(InputInterface $input, RootPackageInterface $package)
     {
         $this->input = $input;
