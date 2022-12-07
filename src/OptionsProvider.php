@@ -12,18 +12,19 @@ use Symfony\Component\Console\Input\InputInterface;
  * Get options first from the command line input and if not available, from the
  * configuration in composer.json file.
  */
- rrr
+ 
 class OptionsProvider
 {
     /**
      * @var InputInterface
      */
+       //tttttt
     protected $input;
     /**
      * @var array
      */
-    protected $packageConfig;
-  sdfsf
+    protected $packageConfig;;
+   
     public function __construct(InputInterface $input, RootPackageInterface $package)
     {
         $this->input = $input;
