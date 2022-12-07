@@ -14,6 +14,7 @@ class Plugin implements PluginInterface, Capable
      */
     public function activate(Composer $composer, IOInterface $io)
     {
+		//test commit
     }
 
     /**
