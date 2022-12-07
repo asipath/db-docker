@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
  * Get options first from the command line input and if not available, from the
  * configuration in composer.json file.
  */
+ rrr
 class OptionsProvider
 {
     /**
