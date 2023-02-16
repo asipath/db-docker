@@ -1,6 +1,6 @@
 <?php
 
-namespace Axelerant\DbDocker;
+namespace Axelerant\DbDocker;;
 
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 
