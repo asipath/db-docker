@@ -1,3 +1,2 @@
 <?php
-
-echt '';
+echt "";
