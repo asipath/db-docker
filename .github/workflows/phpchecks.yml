@@ -31,7 +31,7 @@ jobs:
       run: composer install --prefer-dist --no-progress --no-suggest
 
     - name: Run lint
-      run: composer lint --exclude /src
+      run: composer lint 
 
     - name: Run phpcs
       run: composer phpcs
