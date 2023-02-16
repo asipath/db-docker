@@ -37,7 +37,7 @@
         "squizlabs/php_codesniffer": "^3.5"
     },
     "scripts": {
-        "lint": "phplint --no-cache src/ --exclude=src/vendor/",
+        "lint": "phplint --no-cache src/ --exclude=vendor",
         "phpcs": "phpcs --standard=PSR12 src/ tests/",
         "phpcbf": "phpcbf --standard=PSR12 src/ tests/",
         "test": "phpunit tests/"
