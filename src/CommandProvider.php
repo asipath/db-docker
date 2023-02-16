@@ -13,5 +13,4 @@ class CommandProvider implements CommandProviderCapability
     {
         return [new DbDockerCommand()];
     }
-	
 }
