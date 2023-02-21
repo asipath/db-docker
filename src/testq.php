@@ -1026,7 +1026,7 @@ if (SEARCH_TYPE_IMAGE == $search_params["type"]) {
 
                     // AB Test: No Premium Popup : Start
 
-                    $_SESSION["no_premium"] = $abtester->get_experiment("no_premium", session_id(), SYSTEM::bot_detected() ? "standard" : $_SESSION["landing_page_AB"] ? "standard" : "standard");
+                    $_SESSION["no_premium"] = $abtester->get_experiment("no_premium", session_id(), SYSTEM::bot_detected() ? "standard" : ($_SESSION["landing_page_AB"] ? "standard" : "standard"));
 
                     // AB Test: No Premium popup : End
 
