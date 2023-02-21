@@ -15,13 +15,13 @@ jobs:
         with:
           coverage: none
           tools: phpmd
-          
-    - name: Install dependencies
-      if: steps.composer-cache.outputs.cache-hit != 'true'
-      run: composer install --prefer-dist --no-progress --no-suggest
-
-    - name: Run lint
-      run: composer lint 
+      
+      - name: Install dependencies
+        if: steps.composer-cache.outputs.cache-hit != 'true'
+        run: composer install --prefer-dist --no-progress --no-suggest
+      
+      - name: Run lint
+        run: composer lint
       
       - name: Run PHPMD
         run: phpmd . github ruleset.xml --exclude 'tests/*,vendor/*'
