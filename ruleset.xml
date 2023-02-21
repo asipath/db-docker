@@ -33,7 +33,8 @@
     <!-- Import entire clean code rule set, modify StaticAccess rule -->
     <rule ref="rulesets/cleancode.xml">
         <exclude name="StaticAccess" />
-		 <exclude name="ElseExpression" />
+		<exclude name="ElseExpression" />
+		<exclude name="MissingImport" />
     </rule>
 
 </ruleset>
