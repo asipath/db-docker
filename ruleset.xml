@@ -11,7 +11,7 @@
     </description>
 
     <!-- Import the entire unused code rule set -->
-    
+    <rule ref="rulesets/unusedcode.xml" />
 
     <!--
         Import the entire cyclomatic complexity rule and
@@ -33,6 +33,7 @@
     <!-- Import entire clean code rule set, modify StaticAccess rule -->
     <rule ref="rulesets/cleancode.xml">
         <exclude name="StaticAccess" />
+		 <exclude name="ElseExpression" />
     </rule>
 
 </ruleset>
