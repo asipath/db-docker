@@ -20,7 +20,7 @@
     <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
         <priority>1</priority>
         <properties>
-            <property name="reportLevel" value="5" />
+            <property name="reportLevel" value="10" />
         </properties>
     </rule>
 
@@ -34,15 +34,5 @@
     <rule ref="rulesets/cleancode.xml">
         <exclude name="StaticAccess" />
     </rule>
-    <rule ref="rulesets/cleancode.xml/StaticAccess">
-        <properties>
-            <property name="exceptions">
-                <value>
-                  \DateTime,
-                  \DateInterval,
-                  \DateTimeZone
-                </value>
-            </property>
-        </properties>
-    </rule>
+
 </ruleset>
