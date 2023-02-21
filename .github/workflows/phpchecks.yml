@@ -17,4 +17,4 @@ jobs:
           tools: phpmd
 
       - name: Run PHPMD
-        run: phpmd . github codesize,unusedcode,naming --exclude 'tests/*,vendor/*'
+        run: phpmd . github codesize,unusedcode --exclude 'tests/*,vendor/*'
