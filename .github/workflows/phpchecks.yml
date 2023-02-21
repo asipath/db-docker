@@ -34,7 +34,7 @@ jobs:
       run: composer lint 
 
     - name: Run phpcs
-      run: composer phpcs
+      run: composer phpcbf
 
     - name: Run phpunit
       run: composer test
