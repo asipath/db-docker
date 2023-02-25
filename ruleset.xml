@@ -36,5 +36,10 @@
 		<exclude name="ElseExpression" />
 		<exclude name="MissingImport" />
     </rule>
-
+	
+	<rule ref="PSR12.ControlStructures.ControlStructureSpacing">
+		<properties>
+			<property name="maxLineLength" value="320" />
+		</properties>
+	</rule>
 </ruleset>
