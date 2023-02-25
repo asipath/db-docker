@@ -1,45 +1,41 @@
 <?xml version="1.0"?>
-<ruleset name="My first PHPMD rule set"
-         xmlns="http://pmd.sf.net/ruleset/1.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0
-                     http://pmd.sf.net/ruleset_xml_schema.xsd"
-         xsi:noNamespaceSchemaLocation="
-                     http://pmd.sf.net/ruleset_xml_schema.xsd">
-    <description>
-        My custom rule set that checks my code...
-    </description>
+<ruleset name="Selective Standard">
 
-    <!-- Import the entire unused code rule set -->
-    <rule ref="rulesets/unusedcode.xml" />
+ <!--
+    Use an external tool only when checking coding standards
+    and not while fixing a file.
+ -->
+ <config phpcs-only="true" name="zend_ca_path" value="/path/to/ZendCodeAnalyzer"/>
 
-    <!--
-        Import the entire cyclomatic complexity rule and
-        customize the rule configuration.
-    -->
-    <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
-        <priority>1</priority>
-        <properties>
-            <property name="reportLevel" value="10" />
-        </properties>
-    </rule>
+ <!--
+    Exclude some files from being fixed.
+ -->
+ <exclude-pattern phpcbf-only="true">*/3rdparty/*</exclude-pattern>
 
-    <!-- Import entire naming rule set and exclude rules -->
-    <rule ref="rulesets/naming.xml">
-        <exclude name="ShortVariable" />
-        <exclude name="LongVariable" />
-    </rule>
+ <!--
+    Exclude some sniffs when fixing files, but allow them
+    to still report errors while checking files.
+ -->
+ <rule ref="Squiz">
+  <exclude phpcbf-only="true" name="Generic.WhiteSpace.ScopeIndent"/>
+ </rule>
 
-    <!-- Import entire clean code rule set, modify StaticAccess rule -->
-    <rule ref="rulesets/cleancode.xml">
-        <exclude name="StaticAccess" />
-		<exclude name="ElseExpression" />
-		<exclude name="MissingImport" />
-    </rule>
-	
-	<rule ref="PSR12.ControlStructures.ControlStructureSpacing">
-		<properties>
-			<property name="maxLineLength" value="320" />
-		</properties>
-	</rule>
+ <!--
+    Exclude some messages when fixing files, but allow them
+    to still report errors while checking files.
+ -->
+ <rule ref="Generic.Commenting.Todo.CommentFound">
+  <severity phpcbf-only="true">0</severity>
+ </rule>
+
+ <!--
+    Set different property values for fixing and checking.
+ -->
+ <rule ref="Generic.Files.LineLength">
+  <properties>
+   <property phpcs-only="true" name="lineLimit" value="300"/>
+   <property phpcbf-only="true" name="lineLimit" value="320"/>
+  </properties>
+ </rule>
+
 </ruleset>
