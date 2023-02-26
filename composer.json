@@ -38,8 +38,8 @@
     },
     "scripts": {
         "lint": "phplint --no-cache src/ --exclude=vendor",
-        "phpcs": "phpcs --standard=PSR2  --exclude=Generic.Files.LineLength src/ tests/ --ignore=*/vendor/*",
-        "phpcbf": "phpcbf  --standard=PSR2  --exclude=Generic.Files.LineLength src/ tests/ --ignore=*/vendor/*",
+        "phpcs": "phpcs --standard=PSR12  --exclude=Generic.Files.LineLength src/ tests/ --ignore=*/vendor/*",
+        "phpcbf": "phpcbf  --standard=PSR12  --exclude=Generic.Files.LineLength src/ tests/ --ignore=*/vendor/*",
         "test": "phpunit tests/"
     }
 }
