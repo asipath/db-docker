@@ -11,7 +11,7 @@
     Exclude some files from being fixed.
  -->
  <exclude-pattern phpcbf-only="true">*/vendor/*</exclude-pattern>
-
+ <exclude-pattern phpcf-only="true">*/vendor/*</exclude-pattern>
  <!--
     Exclude some sniffs when fixing files, but allow them
     to still report errors while checking files.
