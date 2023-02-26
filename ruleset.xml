@@ -5,7 +5,7 @@
     Use an external tool only when checking coding standards
     and not while fixing a file.
  -->
- <config phpcs-only="true" name="zend_ca_path" value="/path/to/ZendCodeAnalyzer"/>
+
 
  <!--
     Exclude some files from being fixed.
