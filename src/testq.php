@@ -1,5 +1,3 @@
-
-
 <?php
 
 // - If the user is logged in, check whether the user has enough tokens to do the search, if not show the "You ran out of credit" page.
