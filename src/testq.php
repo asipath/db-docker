@@ -1,5 +1,4 @@
 <?php
-
 // - If the user is logged in, check whether the user has enough tokens to do the search, if not show the "You ran out of credit" page.
 // - If the user is not logged in, show the search results page, but if clicked on an individual result, show the memberships page.
 //   If there is only 1 result, then show the membership page as well.
