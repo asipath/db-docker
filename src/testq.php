@@ -25,7 +25,6 @@ $recaptcha_result = search::get_recpatcha_response($token);
 $baseline_track["save"] = false;
 // AB testing Start
 if (!$user_id) {
-
         // CSI-700 Image Search Progress Web Worker
     if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_zero_WW_RIS"]) && !isset($_SESSION["step_one_WW_RIS"])) {
         $_SESSION["ab_search_progress_WW_RIS"]->track_event("1_searched_WW_RIS", SYSTEM::get_device_type());
