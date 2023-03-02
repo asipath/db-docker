@@ -38,7 +38,7 @@
     },
     "scripts": {
         "lint": "phplint --no-cache src/ --exclude=vendor",
-        "phpcs": "phpcs --standard=PSR2  --exclude=Generic.Files.LineLength,Generic.WhiteSpace.ScopeIndent,Squiz.WhiteSpace.OperatorSpacing --tab-width=4 src/ tests/ --ignore=*/vendor/*",
+        "phpcs": "phpcs --standard=PSR2  --exclude=Generic.Files.LineLength,Generic.WhiteSpace.ScopeIndent,Squiz.WhiteSpace.ControlStructureSpacing --tab-width=4 src/ tests/ --ignore=*/vendor/*",
         "phpcbf": "phpcbf  --runtime-set ignore_warnings_on_exit 1 --standard=ruleset.xml src/ tests/ --ignore=*/vendor/*",
         "test": "phpunit tests/"
     }
