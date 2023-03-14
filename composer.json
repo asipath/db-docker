@@ -38,8 +38,8 @@
     },
     "scripts": {
         "lint": "phplint --no-cache src/ --exclude=vendor",
+		"phpcbf": "phpcbf  src/ tests/ --ignore=*/vendor/*",
         "phpcs": "phpcs --standard=PSR12  --exclude=Generic.Files.LineLength,Generic.WhiteSpace.DisallowSpaceIndent,Generic.WhiteSpace.ScopeIndent,PEAR.WhiteSpace.ScopeIndent,Generic.Functions.FunctionCallArgumentSpacing,PSR1.Files.SideEffects --tab-width=3 src/ tests/ --ignore=*/vendor/*",
-        "phpcbf": "phpcbf  src/ tests/ --ignore=*/vendor/*",
         "test": "phpunit tests/"
     }
 }
