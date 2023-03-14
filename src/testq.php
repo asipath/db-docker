@@ -8,6 +8,7 @@
     include_once("config.php");
     include_once("constants.php");
 
+
     // Auto Loader
     // Todo: Should be moved to the loader.php file
     spl_autoload_register(function ($class) {
