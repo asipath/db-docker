@@ -17,7 +17,6 @@ if ("name_update" == $section) {
         }
     }
 } elseif ("ip_log_rotate" == $section) {
-
     // This can be executed daily, Depending on how long we should keep track of an ip
 
     $temp_file = PATH_IP_LOG_SEARCH . "_";
@@ -29,7 +28,6 @@ if ("name_update" == $section) {
         }
     }
 } elseif ("ip_blacklist_update" == $section) {
-
     // This should be executed every 10 minutes
 
     $cmd = "cat " . PATH_IP_LOG_SEARCH . " | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\" | sort | uniq -c | awk '\$1>100 {print \$2}' >> " . PATH_IP_LOG_BLACKLISTED;
@@ -43,7 +41,6 @@ if ("name_update" == $section) {
 
     @unlink(PATH_IP_LOG_BLACKLISTED . "_");
 } elseif ("ip_whitelist_crawler" == $section) {
-
     // This should be executed daily
 
     $client = new \vbrowser();
@@ -78,7 +75,7 @@ if ("name_update" == $section) {
 } elseif ("most_searched_names" == $section) {
     Search::update_most_searched_names();
 } elseif ("smoke_test_ris" == $section) {
-    $count=reports::smoke_test_ris_pending_count();
+    $count = reports::smoke_test_ris_pending_count();
 
     if ($count['pending_count'] > 500) {
         reports::update_smoke_test_ris_pending_count("ris", $count['pending_count']);
@@ -120,12 +117,12 @@ if ("name_update" == $section) {
 } elseif ("action_log_hourly_average" == $section) {
     $search_types = [
         "login:1" => "Login",
-        "search:".SEARCH_TYPE_USERNAME => "Search:Username",
-        "search:".SEARCH_TYPE_EMAIL => "Search:Email",
-        "search:".SEARCH_TYPE_NAME => "Search:Name",
-        "search:".SEARCH_TYPE_PHONE => "Search:Phone",
-        "search:".SEARCH_TYPE_IMAGE => "Search:Image",
-        "search:".SEARCH_TYPE_RAS => "Search:RAS"
+        "search:" . SEARCH_TYPE_USERNAME => "Search:Username",
+        "search:" . SEARCH_TYPE_EMAIL => "Search:Email",
+        "search:" . SEARCH_TYPE_NAME => "Search:Name",
+        "search:" . SEARCH_TYPE_PHONE => "Search:Phone",
+        "search:" . SEARCH_TYPE_IMAGE => "Search:Image",
+        "search:" . SEARCH_TYPE_RAS => "Search:RAS"
     ];
     $to_date = date("Y-m-d H:i:s");
     foreach ($search_types as $key => $value) {
@@ -173,7 +170,8 @@ if ("name_update" == $section) {
                     $pwned_lastmonth = PWNED::is_pwned_within_last_month($v["id"]);
                     if (! empty($pwned_lastmonth)) {
                         $email_template_data = SCF::get_mail_template(
-                            "override_template_privacy_lock_issue_found_monthly", [
+                            "override_template_privacy_lock_issue_found_monthly",
+                            [
                             "User" => "{$v["first_name"]} {$v["last_name"]}",
                             ]
                         );
@@ -186,7 +184,8 @@ if ("name_update" == $section) {
                         $mailer->send();
                     } else {
                         $email_template_data = SCF::get_mail_template(
-                            "override_template_privacy_lock_no_issue_found_monthly", [
+                            "override_template_privacy_lock_no_issue_found_monthly",
+                            [
                             "User" => "{$v["first_name"]} {$v["last_name"]}",
                             ]
                         );
@@ -204,7 +203,8 @@ if ("name_update" == $section) {
 
             if ($v["created"] == date('Y-m-d', strtotime('-2 days'))) {
                 $email_template_data = SCF::get_mail_template(
-                    "override_template_privacy_lock_2days_after_signup", [
+                    "override_template_privacy_lock_2days_after_signup",
+                    [
                     "User" => "{$v["first_name"]} {$v["last_name"]}",
                     ]
                 );
@@ -243,7 +243,8 @@ if ("name_update" == $section) {
 
                 if (! empty($status)) {
                     $email_template_data = SCF::get_mail_template(
-                        "override_template_privacy_lock_change_detected", [
+                        "override_template_privacy_lock_change_detected",
+                        [
                         "User" => "{$v["first_name"]} {$v["last_name"]}",
                         "email" => $pl_v[0],
                         ]
@@ -275,7 +276,8 @@ if ("name_update" == $section) {
 
                 if (! empty($status)) {
                     $email_template_data = SCF::get_mail_template(
-                        "override_template_privacy_lock_change_detected", [
+                        "override_template_privacy_lock_change_detected",
+                        [
                         "User" => "{$v["first_name"]} {$v["last_name"]}",
                         ]
                     );
@@ -333,7 +335,8 @@ if ("name_update" == $section) {
         $versions = explode(":", $html);
         if (! empty($versions[0]) && ! empty($versions[1])) {
             $email_template_data = SCF::get_mail_template(
-                "sendy-new-version-available", [
+                "sendy-new-version-available",
+                [
                 "current" => $versions[0],
                 "new" => $versions[1]
                 ]
@@ -379,37 +382,37 @@ if ("name_update" == $section) {
     $avg_by_hour = $dbi->query_to_array($sql_avg_by_hour);
 
     $avg_diff = abs($avg_by_day["yandex_results_avg"] - $avg_by_hour["yandex_results_avg"]);
-    $avg_d_h = (($avg_by_day["yandex_results_avg"] + $avg_by_hour["yandex_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["yandex_results_avg"] + $avg_by_hour["yandex_results_avg"]) / 2) * 0.5;
     if ($avg_diff > $avg_d_h ||  $avg_by_day["yandex_results_avg"] <= 0 || $avg_by_hour["yandex_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Yandex", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
 
     $avg_diff = abs($avg_by_day["googleLens_results_avg"] - $avg_by_hour["googleLens_results_avg"]);
-    $avg_d_h = (($avg_by_day["googleLens_results_avg"] + $avg_by_hour["googleLens_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["googleLens_results_avg"] + $avg_by_hour["googleLens_results_avg"]) / 2) * 0.5;
     if ($avg_diff > $avg_d_h ||  $avg_by_day["googleLens_results_avg"] <= 0 || $avg_by_hour["googleLens_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Google Lens", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
 
     $avg_diff = abs($avg_by_day["bingapi_results_avg"] - $avg_by_hour["bingapi_results_avg"]);
-    $avg_d_h = (($avg_by_day["bingapi_results_avg"] + $avg_by_hour["bingapi_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["bingapi_results_avg"] + $avg_by_hour["bingapi_results_avg"]) / 2) * 0.5;
     if ($avg_diff > $avg_d_h ||  $avg_by_day["bingapi_results_avg"] <= 0 || $avg_by_hour["bingapi_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Bing API", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
 
     $avg_diff = abs($avg_by_day["tineye_results_avg"] - $avg_by_hour["tineye_results_avg"]);
-    $avg_d_h = (($avg_by_day["tineye_results_avg"] + $avg_by_hour["tineye_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["tineye_results_avg"] + $avg_by_hour["tineye_results_avg"]) / 2) * 0.5;
     if ($avg_diff > $avg_d_h || $avg_by_day["tineye_results_avg"] <= 0 || $avg_by_hour["tineye_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Tineye", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
 
     $avg_diff = abs($avg_by_day["bing_results_avg"] - $avg_by_hour["bing_results_avg"]);
-    $avg_d_h = (($avg_by_day["bing_results_avg"] + $avg_by_hour["bing_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["bing_results_avg"] + $avg_by_hour["bing_results_avg"]) / 2) * 0.5;
     if ($avg_diff > $avg_d_h ||  $avg_by_day["bing_results_avg"] <= 0 || $avg_by_hour["bing_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Bing", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
 
     $avg_diff = abs($avg_by_day["google_results_avg"] - $avg_by_hour["google_results_avg"]);
-    $avg_d_h = (($avg_by_day["google_results_avg"] + $avg_by_hour["google_results_avg"])/2)*0.5;
+    $avg_d_h = (($avg_by_day["google_results_avg"] + $avg_by_hour["google_results_avg"]) / 2) * 0.5;
     if (($avg_diff > $avg_d_h) || $avg_by_day["google_results_avg"] <= 0 || $avg_by_hour["google_results_avg"] <= 0) {
         \Slack::sendAlert("RIS Baseline - There are an abnormal count in Google", API_THRESHOLD_SLACK_ALERT_WEBHOOK);
     }
@@ -424,7 +427,8 @@ if ("name_update" == $section) {
 			IF(((count(case tineye_results when 0 then 1 else null end)/count(*))*100) >99 , false,true) tineye,
 			IF(((count(case bing_results when 0 then 1 else null end)/count(*))*100) >70 , false,true) bing,
 			IF(((count(case google_results when 0 then 1 else null end)/count(*))*100) >50 , false,true) google
-			from %s  WHERE date >= DATE_SUB(NOW(), INTERVAL 5 HOUR);", DB_TBL_CACHE
+			from %s  WHERE date >= DATE_SUB(NOW(), INTERVAL 5 HOUR);",
+        DB_TBL_CACHE
     );
 
     $result = $dbi_cache->query_to_array($sql);
@@ -500,28 +504,30 @@ if ("name_update" == $section) {
             foreach ($reports as $report) {
                 if ($report["has_sent_first_mail"]) {
                     array_push($secondmail_reports, $report);
-                    array_push($secondmail_users, ["email"=>$report["email"] , "first_name"=> $report["first_name"] , "last_name"=>$report["last_name"]]);
+                    array_push($secondmail_users, ["email" => $report["email"] , "first_name" => $report["first_name"] , "last_name" => $report["last_name"]]);
                 } else {
                     array_push($firstmail_reports, $report);
-                    array_push($firstmail_users, ["email"=>$report["email"] , "first_name"=> $report["first_name"] , "last_name"=>$report["last_name"]]);
+                    array_push($firstmail_users, ["email" => $report["email"] , "first_name" => $report["first_name"] , "last_name" => $report["last_name"]]);
                 }
             }
         }
 
         foreach ($firstmail_reports as $firstmail_report) {
-            $firstmail_reports_links[$firstmail_report["email"]] .= '<p><a href="'. BASE_URL . "reverse-image-search?". $firstmail_report["id"] . '">'. BASE_URL . "reverse-image-search?". $firstmail_report["id"] . '</a></p>';
+            $firstmail_reports_links[$firstmail_report["email"]] .= '<p><a href="' . BASE_URL . "reverse-image-search?" . $firstmail_report["id"] . '">' . BASE_URL . "reverse-image-search?" . $firstmail_report["id"] . '</a></p>';
         }
 
         foreach ($secondmail_reports as $secondmail_report) {
-            $secondmail_reports_links[$secondmail_report["email"]] .= '<p><a href="'. BASE_URL . "reverse-image-search?". $secondmail_report["id"] . '">'. BASE_URL . "reverse-image-search?". $secondmail_report["id"] . '</a></p>';
+            $secondmail_reports_links[$secondmail_report["email"]] .= '<p><a href="' . BASE_URL . "reverse-image-search?" . $secondmail_report["id"] . '">' . BASE_URL . "reverse-image-search?" . $secondmail_report["id"] . '</a></p>';
         }
 
         foreach (array_intersect_key($firstmail_users, array_unique(array_column($firstmail_users, 'email'))) as $user) {
             $email_template_data = SCF::get_mail_template(
-                "override_template_ris_unviewed_report_first_mail", [
+                "override_template_ris_unviewed_report_first_mail",
+                [
                 "User" => "{$user["first_name"]} {$user["last_name"]}",
                 "Reports" => $firstmail_reports_links[$user["email"]]
-                ], false
+                ],
+                false
             );
 
             $mailer = SCF::get_mailer();
@@ -534,10 +540,12 @@ if ("name_update" == $section) {
 
         foreach (array_intersect_key($secondmail_users, array_unique(array_column($firstmail_users, 'email'))) as $user) {
             $email_template_data = SCF::get_mail_template(
-                "override_template_ris_unviewed_report_second_mail", [
+                "override_template_ris_unviewed_report_second_mail",
+                [
                 "User" => "{$user["first_name"]} {$user["last_name"]}",
                 "Reports" => $secondmail_reports_links[$user["email"]]
-                ], false
+                ],
+                false
             );
 
             $mailer = SCF::get_mailer();
@@ -573,11 +581,11 @@ if ("name_update" == $section) {
             $image_search_result = Search::get_image_search_status($result["image_search_id"]);
 
             if ($image_search_result["completed"] && !$image_search_result["pending"]) {
-                if ($image_search_result["matches_exact"]>$result["old_result_exact_count"]) {
+                if ($image_search_result["matches_exact"] > $result["old_result_exact_count"]) {
                     $sql = sprintf("SELECT i.user_id, u.email FROM %s i inner join %s u on i.user_id = u.id WHERE i.id = %s", DB_TBL_IMAGE_SEARCH, DB_TBL_USER, $result["image_search_id"]);
                     $data = $dbi->query_to_array($sql);
 
-                    echo $data["email"]."\n";
+                    echo $data["email"] . "\n";
 
                     $sendy = SYSTEM::loadsendy();
                     $sendy->setListId(SENDY_LIST_RIS_DOWN_TIME_REPORTS);
