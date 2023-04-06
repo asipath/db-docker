@@ -33,8 +33,8 @@ jobs:
     - name: Run lint
       run: composer lint 
 
-    - name: Run phpcbs
-      run: composer phpcbs
+    - name: Run phpcbf
+      run: composer phpcbf
 
     - name: Run phpcs
       run: composer phpcs
