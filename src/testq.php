@@ -1,3761 +1,2181 @@
 <?php
 
-$query_text = !empty($result["name"]) ? $result["name"] : (!empty($search_data["cached_data"]["query"]) ? $search_data["cached_data"]["query"] : (!empty($search_data["ras_records"]) ? $search_data["ras_records"]["property_info"]["address"] : "User Uploaded Image"));
+    if ( ! defined( "FROM_INDEX" ) ) die(); 
 
-// Remove Affiliate Links
-foreach ($result["urls"] as $_index => $_link) {
-    $uri = parse_url($_link);
-    if (empty($uri["host"]) || preg_match("/(?:spokeo|archives|yellowpages|whitepage|whitepages|peoplefinders|10digits|beenverified|instantcheckmate)\.(?:com|us|org|net|plus)/i", $uri["host"])) {
-        unset($result["urls"][$_index]);
+    if (isset($_SESSION["removed-head-foot"]) && !$user_id) {
+        $remove_head_foot = true;
     }
-}
-unset($_index, $_link);
-unset($_SESSION["ris_intermediate"]);
 
-$phone_number_search = ($search_data["type"] == SEARCH_TYPE_PHONE);
-$email_number_search = ($search_data["type"] == SEARCH_TYPE_EMAIL);
-//IPQ email search for report enrichment
-$report_id = (!empty($result["id"])) ? $result["id"] : $search["cache_id"];
-$email = ($email_number_search && !empty($search_data["cached_data"]['query']) ? $search_data["cached_data"]['query'] : $result["emails"][0]);
-if (!empty($email) && $pwnd_and_IPQ_only) {
-    //if( ! empty($email) && (($report_id>0)|| $pwnd_and_IPQ_only) ) {
-
-    $get_ipq_email = $report_id ? IPQ::get_cached_data($report_id, SEARCH_TYPE_EMAIL) : null;
-
-    if (empty($get_ipq_email)) {
-        //$get_ipq_email = IPQ::search_email($email); //$query_text, Move to module
-        //IPQ::save_cached_data( $get_ipq_email, $report_id, SEARCH_TYPE_EMAIL );
+    if ($user_id) {
+        $get_plans_of_user = Membership::get_user_plans( $user_id, true );
+        $_SESSION["price_changed"] = in_array($get_plans_of_user[0]['membership_id'], ['77','76'], true );
     }
-    $pwned_data = PWNED::check_PWNED($email);
-}
 
-//IPQ phone search for report enrichment
-$phone = ($phone_number_search ? $query_text : (!empty($search_data["cached_data"]['query']) ? $search_data["cached_data"]['query'] : $result["phones"][0]));
-//if( ! empty( $phone) && (($report_id>0)|| $pwnd_and_IPQ_only)) {
-if (!empty($phone) && $pwnd_and_IPQ_only) {
-    $phone_number_filter = preg_replace("/[^0-9]/", '', $phone);
-    $get_ipq_phone = $report_id ? IPQ::get_cached_data($report_id, SEARCH_TYPE_PHONE) : null;
-    if (empty($get_ipq_phone)) {
-        //$get_ipq_phone = IPQ::search_phone( $phone_number_filter ); //Move to moduleSS
-        //IPQ::save_cached_data( $get_ipq_phone, $report_id, SEARCH_TYPE_PHONE );
-    }
-    $pwned_data = PWNED::check_PWNED($phone_number_filter);
-}
 
-// Pwned data variable from module
-//$pwned_data=null;
-//$get_ipq_phone=null;
-//$get_ipq_email=null;
+    $no_index = true;
+    $override_checkout = 0;
+    $exclude_hire_us_button = true;
+    $coupon_applied = ! empty( $_SESSION["coupon_data"] );
+    $include_map_scripts = true;
+    $user_credit_cards = [];
+	$testcase_is_running = ! empty( $user_data["email"] ) && EMAIL_TEST_MAIL == $user_data["email"] ? true : false;
+	$amazon_biling_agreement = ! empty( $post_data["ap_token"] ) ? $post_data["ap_token"] : "";
+    $dashboard_membership_addon_request = SYSTEM::request( "dashboard_membership_addon_request" );
+    $is_mobile_app = SYSTEM::request( "is_mobile_app" );
+    $is_RIS_only = SYSTEM::request('ris_only');
+    $is_mobile_app_email = SYSTEM::request( "email" );
+    $is_mobile_app_session = SYSTEM::request( "_s" );
+    $is_mobile_app_plan_id = SYSTEM::request( "key" );
+    $is_mobile_app_key = SYSTEM::request( "_k" );
+    $is_mobile_app_person_id = SYSTEM::request( "person" );
+    $is_mobile_app_person_name = SYSTEM::request( "name" );
+    $criminal_records_addon = SYSTEM::request("criminal_records_addon");
+    $check_out = true;
+    if( ! empty( $post_data["billing_phone"] ) ) $post_data["billing_phone"] = preg_replace("/[^0-9]/", "", $post_data["billing_phone"] );
 
-?>
-<div class="scf-report" <?php SCF::js_controller("search.report_scroll") ?>>
-    <div class="container">
-        <?php if (!empty($privacy_lock_first_visit)) { ?>
-            <div class="scf-pl-activated">
-                <div class="row">
-                    <div class="col-md-9">
-                        <span class="si-secured-fill"></span>
-                        <h4>PRIVACY LOCK ACTIVATED</h4>
-                        <p>As part of your subscription, the email associated with your account is now enrolled in
-                            Privacy Lock. <span>FREE of charge</span>. We will continue to monitor data breaches found
-                            in the Dark Web and will notify you if your email account is ever involved. </p>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="<?php echo PAGE_URL_DASHBOARD; ?>?section=privacy_lock" class="btn btn-bordered-gray">Learn
-                            More</a>
-                    </div>
-                </div>
-            </div>
-        <?php }
-        if ($search_data["type"] != null && ($search_data["type"] == SEARCH_TYPE_USERNAME || $search_data["type"] == SEARCH_TYPE_EMAIL || $search_data["type"] == SEARCH_TYPE_NAME || $search_data["type"] == SEARCH_TYPE_PHONE)) { ?>
-            <div class="report-head">
-                <?php
-                if ($search_data["type"] == 3) {
-                    if (!empty($search_data["actual_record_id"])) {
-                        $cache_id = $search_data["actual_record_id"];
-                    } else {
-                        $cache_id = $search_data["cached_data"]["results"][0]["id"];
-                    }
-                } else {
-                    $cache_id = $search_data["cached_data"]["cache_id"];
-                }
-                $pl_data = User::get_privacy_lock_tracking_report($user_id, $cache_id);
-                $privacy_lock = false;
-                $privacy_lock_class = (count($pl_data) > 0) ? 'show-success' : 'show-add-to';
-                ?>
-                <div class="row add-to-privacy <?php echo $privacy_lock_class; ?>">
-                    <div class="col-sm-8">
-                        <span class="si-secured"></span>
-                        <p><span>Is This Your Personal Information?</span></p>
-                        <p>Monitor changes to your public data using Privacy Lock.</p>
-                    </div>
-                    <div class="col-sm-4">
-                        <button type="button" class="btn btn-light-blue"
-                                data-val="<?php echo $cache_id ?>" <?php SCF::js_controller("privacy_lock.add") ?>><span
-                                    class="si-plus"></span>Add to Privacy Lock
-                        </button>
-                    </div>
-                </div>
+    $token = ! empty( $direct_token ) ? $direct_token : $token;
 
-                <div class="row added-to-privacy <?php echo $privacy_lock_class; ?>">
-                    <div class="col-sm-8">
-                        <span class="si-secured-fill"></span>
-                        <p><span>Successfully Added to Privacy Lock</span></p>
-                        <p>Monitoring the report in Privacy Lock since <?php
-                        if ($pl_data["first_tracking_date"] == "") {
-                            $pl_data["first_tracking_date"] = date(DATE_FORMAT);
-                        }
-                            echo date(DATE_FORMAT, strtotime($pl_data["first_tracking_date"])); ?></p>
-                    </div>
-                    <div class="col-sm-4">
-                        <a href="<?php echo BASE_URL . "dashboard.html?section=privacy_lock" ?>">
-                            <button type="button" class="btn btn-light-green"><span class="si-fullscreen"></span>View in
-                                Privacy Lock
-                            </button>
-                        </a>
-                    </div>
-                </div>
-                <span class="si-close-circle close-btn" <?php SCF::js_controller("privacy_lock.close") ?>></span>
-            </div>
-        <?php } ?>
-        <?php
-        if (!empty($search_data) && isset($search_data["type"]) && $search_data["type"] <> SEARCH_TYPE_IMAGE) {
-            $profile_image = SCF::imgcdn_url(!empty($result["images"][0]) ? $result["images"][0] : $current_template_assets_url . "/images/no-image.jpg");
+    // Device Type
+    $device = SYSTEM::get_device_type();
 
-            if (!empty($result["name"])) {
-                $first_name = explode(" ", $result["name"])[0];
-                $name_origin = BehindTheNameAPI\BehindTheNameAPI::fetch_data($first_name);
+    $validated_mobile_app_user = false;
+    if( $is_mobile_app ){
+        //validate session  and key with sent email
+        //$is_mobile_app_key
+        //$is_mobile_app_session
+        //$is_mobile_app_email
+
+        $validated_mobile_app_user = true;
+        if( ! empty( $is_mobile_app_email ) && $validated_mobile_app_user ) {
+            $user_data = User::get_by_email( $is_mobile_app_email );
+            if( ! empty( $user_data ) && ! empty( $user_data["id"] ) ){
+                $user_id = $user_data["id"];
+                $_SESSION["mobile_app_user"] = $user_data["id"];
+                $_SESSION["mobile_app_user_data"] = $user_data;
+                $user_data["walkthrough"] = 0;
             }
+        }
+    }
 
-            $date_range = [];
-            array_walk_recursive($result["record_dates"], function ($date) use (&$date_range) {
+    if( ! empty( $_SESSION["mobile_app_user"] ) ) $user_id = $_SESSION["mobile_app_user"];
+    if( ! empty( $_SESSION["mobile_app_user_data"] ) ) $user_data = $_SESSION["mobile_app_user_data"];
 
-                $timestamp = strtotime($date);
-                if (!empty($date) && $timestamp) {
-                    if (!is_null($date_range["earliest"]) || !is_null($timestamp)) {
-                        if (empty($date_range["earliest"]) || $date_range["earliest"] > $timestamp) {
-                            $date_range["earliest"] = $timestamp;
-                        }
-                    }
 
-                    if (!is_null($date_range["latest"]) || !is_null($timestamp)) {
-                        if (empty($date_range["latest"]) || $date_range["latest"] < $timestamp) {
-                            $date_range["latest"] = $timestamp;
-                        }
-                    }
-                }
-            });
-            $meta_data =& $result["record_dates"];
-            // Section: Profile Summary
-            ?>
-            <form method="post"
-                  action="<?php echo RELATIVE_URL . "search.html" ?>" <?php SCF::js_controller("search.click_form") ?>
-                  target="_blank">
-                <input type="hidden" name="search_type" value=""/>
-                <input type="hidden" name="full_name" value=""/>
-                <input type="hidden" name="phone" value=""/>
-                <input type="hidden" name="email" value=""/>
-                <input type="hidden" name="username" value=""/>
-            </form>
-            <form method="post"
-                  action="<?php echo RELATIVE_URL . "dashboard.html" ?>" <?php SCF::js_controller("search.click_form_ras") ?>
-                  target="_blank">
-                <input type="hidden" name="search_type" value=""/>
-                <input type="hidden" name="address" value=""/>
-            </form>
-            <div class="report-box report-main ss-report-main">
-                <div class="row">
-                    <!--
-            <div class="col-sm-8 col-md-8 report-img">
-                <div class="row">
-                    <div class="col-md-12">
-                        <i class="si-done-circle"></i> Records found for <h4><?php echo $query_text; ?> <?php echo (!empty($result["age"])) ? "<span>Age " . $result["age"] . "</span>" : ""; ?></h4>
-                    </div>
-                </div>
-            <?php
-            if ($phone_number_search) {
-                ?>
-                <div class="row phone_number_search">
-                    <div class="col-xs-12 col-md-12">
-                    <strong>Carrier: </strong><span> <?php echo($search["meta"]["carrier"] ?: "N/A"); ?></span><br>
-                    </div>
-                </div>
-                <div class="row phone_number_search">
-                    <div class=" col-xs-12 col-md-9">
-                        <div class="row">
-                            <div class="col-xs-6 col-md-6 col-lg-3 col-xl-3">
-                                <strong>Active: <span class="active_box">YES</span></strong>
-                            </div>
-                            <div class="col-xs-6 col-md-6 col-lg-3  col-xl-3">
-                                <strong>Pre-paid:<span class="inactive_box"><?php echo(!empty($search["meta"]["is_prepaid"]) ? $search["meta"]["is_prepaid"] : "N/A"); ?></span></strong></div>
-                            <div class="col-xs-12 col-md-12 col-lg-6  col-xl-6 location">
-                                <strong>Line Type:</strong><span> <?php echo($search["meta"]["line_type"] ?: "N/A"); ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row phone_number_search">
-                    <div class="col-xs-12 col-md-12">
-                        <strong>Location : </strong><span> <?php $phone_owner = array_shift($search["meta"]["names"]);
-                        echo($phone_owner); ?></span><br>
-                    </div>
-                </div>
-                <?php
+    $include_popup[] = "cvv_popup";
+    $include_popup[] = "search_ready";
+    if ( ! $user_id ) $include_popup[] = "signup_form";
+    if ( $_SESSION["boosted_no_results"] ) $include_popup[] = "ris-no-boosted";
+
+    /*
+    $amazon_pay_ab_test = $abtester->get_experiment( "amazon_pay", session_id() );
+    if ( $amazon_pay_ab_test->variation_key == "amazon_pay" ) {
+
+        $amazon_pay_ab_test_active = true;
+        $include_amazonpay_scripts = true;
+
+    }
+    */
+
+/* AB Test: better_results : START*/
+
+if (isset($_SESSION["br_complete"])) {
+    unset($_SESSION["br_complete"]);
+}
+
+/* AB Test: better_results : END*/
+
+    // Ajax
+    if ( SYSTEM::is_ajax_request() ) {
+
+        SYSTEM::flush_ajax_response();
+
+    }
+
+    // Get current users active plan list
+    $active_memberships = User::get_active_plan_ids( $user_id, true );
+
+    // PayFlow Transparent Redirect Response
+    if ( "pftr" == $cmd && ! empty( $_SESSION["tokens"][ $token ] ) ) {
+
+        $_SESSION["tokens"][ $token ]["payflow_data"] = $_GET;
+        $action = "checkout";
+        $post_data = array_merge( $post_data, $_SESSION["tokens"][ $token ]["post_data"] );
+        $post_data["card_token"] = 1;
+        unset( $_SESSION["tokens"][ $token ]["pf_token_data"], $_SESSION["tokens"][ $token ]["post_data"] );
+
+    }
+
+    // USAePay Tokenization
+    if ( "usaepay_token" == $cmd && ! empty( $_SESSION["tokens"][ $token ] ) ) {
+
+        $_SESSION["tokens"][ $token ]["usaepay_data"] = $_GET;
+        $_SESSION["tokens"][ $token ]["post_data"]["card_token"] = $input_get["UMrefNum"];
+        $redirect = RELATIVE_URL . "membership-levels/?token={$token}&cmd=usaepay_token_set";
+        SYSTEM::redirect( $redirect );
+
+    } elseif ( "usaepay_token_set" == $cmd ) {
+
+        $_GET = array_merge( $_GET, $_SESSION["tokens"][ $token ]["usaepay_data"] );
+        $post_data = array_merge( $post_data, $_SESSION["tokens"][ $token ]["post_data"] );
+        $action = "checkout";
+    }
+
+    if ( "nmitr" == $cmd && ! empty( $_SESSION["tokens"][ $token ] ) ) {
+
+        $nmi_payment = true;
+        $action = "checkout";
+        $post_data = $_SESSION["tokens"][ $token ]["nmi_data"];
+        $_SESSION["tokens"][ $token ] = array_merge( $_SESSION["tokens"][ $token ], $post_data );
+
+    }
+
+    if ( ! empty( $payment_session ) ) {
+
+        $payment_token = $token;
+        $token = $payment_session;
+        $override_checkout = $checkout_step ?: 0;
+        if ( ! empty( $cmd ) ) {
+
+            $post_data["method"] = $cmd;
+            $post_data["tos_agree"] = 1;
+
+        }
+
+        if ( $_SESSION["tokens"][ $token ]["payment_token"] != $payment_token ) $token = "";
+        if ( ! empty( $_SESSION["tokens"][ $token ]["upsell_membership_selected"] ) ) $post_data["plan_id"] = "upsell";
+
+    } else $payment_token = "";
+
+    $mailchimp_script = true;
+
+    // Page Data
+    if ( ! empty( $token ) && ! empty( $_SESSION["tokens"][ $token ] ) ) {
+
+        $checkout_step = 1;
+        $page_title = "Membership Checkout | People Search - SocialCatfish.com";
+        $page_description = "Find or verify someone using just an image Find out information about someone with just their name Locate online social profiles (dating profiles, social profiles and work profiles) Get access to criminal records* Find out who lives at an address Verify a business Find out who owns an email Find out who owns a phone &hellip;";
+        $token_session_data = &$_SESSION["tokens"][ $token ];        
+
+		if( empty( $token_session_data["billing_lastname"] ) || empty( $token_session_data["billing_firstname"] ) || ( ! empty( $membership["show_phone_number"] ) && empty( $token_session_data["billing_phone"] ) ) ) $token_session_data = array_merge( $token_session_data, array_filter( $post_data ) );
+
+        if ( ! isset( $token_session_data["sub_page"] ) ) {
+
+            $checkout_page = true;
+        }
+
+        if ( ! empty( $token_session_data["template"] ) ) {
+
+            SCF::switch_to_template( $token_session_data["template"] );
+
+        }
+
+        // $_SESSION['AB_skip_combo'] = $abtester->get_experiment( "skip_trial_combo", session_id(), SYSTEM::bot_detected() ? "standard" :  $_SESSION["landing_page_AB"] ? "standard" : "standard" );
+
+        // if ($_SESSION['AB_skip_combo']->variation_key == "revised") {
+
+        //     if (SYSTEM::request_post( "skip_trial_combo" )) {
+        //         $plan_skip = SYSTEM::request_post( "skip_trial_combo" );
+        //         $token_session_data["membership_id"] = $plan_skip;
+        //         $token_session_data["membership"] = Membership::get( $plan_skip );
+        //         $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+        //         SYSTEM::redirect( $redirect );
+        //     }
+
+        // }
+
+        // Assign combine: unlimite social search plan and one time boosted plan
+        if( isset ( $_SESSION["regular_premium_combine"] ) ) {
+            if( isset( $_SESSION["active_boosted_ontime"] ) ) {
+                $membership = Membership::get( PLAN_UNLIMITED_GENERAL_BOOSTED_ONETIME );
+                $token_session_data["membership_id"] = PLAN_UNLIMITED_GENERAL_BOOSTED_ONETIME;
+                $token_session_data["membership"] = $membership;
             } else {
-                ?>
-                <?php if (!empty($result["gender"])) { ?>
-                                <strong>Gender :</strong><p><?php echo ucfirst(strtolower($result["gender"])); ?></p><br>
-                <?php } ?>
-                        <?php if (!empty($result["locations"][0])) { ?>
-                            <strong>Likely Current Address :</strong><p><?php echo ucfirst(strtolower($result["locations"][0])); ?></p><br>
-                        <?php } ?>
-                        <?php if (!empty($result["phones"][0])) { ?>
-                            <strong>Likely Current Phone :</strong><p><?php echo ucfirst(strtolower($result["phones"][0])); ?></p><br>
-                        <?php } ?>
-                        <?php if (!empty($result["emails"][0])) { ?>
-                            <strong>Last Seen Email :</strong><p><?php echo ucfirst(strtolower($result["emails"][0])); ?></p><br>
-                        <?php } ?>
-            <?php } ?>
-   
-                <?php
-                if (empty($premium_content_user) && !empty($result['premium_data'])) {
-                    ?>
-                            <br><div class="btn btn-dark-green mobile-premium-btn" data-target="premium_data_found" <?php SCF::js_controller("modal.onclick_show"); ?>>UNLOCK PREMIUM</div>
-                    <?php
-                }
-                ?>
+                $membership = Membership::get( PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL );
+                $token_session_data["membership_id"] = PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL;
+                $token_session_data["membership"] = $membership;
+            }
+            $person_id = $_SESSION["search_params"]["person_id"];
+        }
         
-        </div> -->
-                    <!-- start -->
-                    <div class="col-sm-8 report-img">
-                        <div>
-                            <div>
-                                <img src="<?php echo $profile_image; ?>" alt="User"
-                                     style="background-image: url('<?php echo $profile_image; ?>');" decoding="async"
-                                     loading="lazy"/>
-                            </div>
-                            <?php
-                            if (!empty($search_data["cached_data"]["results"][0]["isDead"])) {
-                                echo "<br><br><div><p class='btn btn-bordered-red' style='color: red;'>DECEASED</p></div>";
-                            }
-                            ?>
+        if ($_SESSION["price_changed"]) {
 
-                        </div>
-                        <div class="report-content">
-                            <span><i class="si-done-circle"></i> Matches found for</span>
-                            <h4><?php echo $query_text; ?><?php echo (!empty($result["age"])) ? "<span>Age " . $result["age"] . "</span>" : ""; ?></h4>
-                            <?php
-                            if ($phone_number_search) {
-                                ?>
-                                <strong>Possible Owner:</strong>
-                                <p><?php $phone_owner = (array_shift($search["meta"]["names"]) ?: (array_shift(explode(',', $get_ipq_phone["name"]))));
-                                    echo('<a href="' . BASE_URL . '">' . $phone_owner . '</a>'); ?></p><br>
-                                <strong>Associated Phone(s):</strong><p><?php echo(1 ? "N/A" : "N/A"); ?></p><br>
-                                <strong>Associated Emails(s):</strong>
-                                <p><?php echo(!empty($get_ipq_phone["associated_email_addresses"]["emails"]) ? (implode(', ', $get_ipq_phone["associated_email_addresses"]["emails"])) : "N/A"); ?></p>
-                                <br>
-                                <strong>Location:</strong>
-                                <p><?php echo(isset($result["locations"][0]) ? ucfirst(strtolower($result["locations"][0])) : $get_ipq_phone["city"] . "/" . $get_ipq_phone["country"] . "/" . ($get_ipq_phone["zip_code"] != "N/A" ? $get_ipq_phone["zip_code"] . "/" : "") . $get_ipq_phone["region"]); ?></p>
-                                <?php
-                            } else {
-                                ?>
-                                <?php if (!empty($result["gender"])) { ?>
-                                    <strong>Gender :</strong>
-                                    <p><?php echo ucfirst(strtolower($result["gender"])); ?></p><br>
-                                <?php } ?>
-                                <?php if (!empty($result["locations"][0])) { ?>
-                                    <div class="result-tbl-fix"><strong>Likely Current Address :</strong>
-                                        <p><?php echo SCF::address_format($result["locations"][0]); ?></p></div>
-                                <?php } ?>
-                                <?php if (!empty($result["phones"][0])) { ?>
-                                    <strong>Likely Current Phone :</strong>
-                                    <p><?php echo SYSTEM::phone_number_format($result["phones"][0]); ?></p><br>
-                                <?php } ?>
-                                <?php if (!empty($result["emails"][0])) { ?>
-                                    <strong>Last Seen Email :</strong>
-                                    <p><?php echo ucfirst(strtolower($result["emails"][0])); ?></p><br>
-                                <?php } ?>
-                            <?php } ?>
+            if ($token_session_data["membership"]["id"] == "75") {
+                
+                $membership = Membership::get( PLAN_UNLIMITED_3_DAY_RIS_2897 );
+                $token_session_data["membership_id"] = PLAN_UNLIMITED_3_DAY_RIS_2897;
+                $token_session_data["membership"] = $membership;
 
-                            <?php
-                            if (empty($premium_content_user) && !empty($result['premium_data'])) {
-                                ?>
-                                <br>
-                                <div class="btn btn-dark-green mobile-premium-btn"
-                                     data-target="premium_data_found" <?php SCF::js_controller("modal.onclick_show"); ?>>
-                                    UNLOCK PREMIUM
-                                </div>
-                                <?php
-                            }
-                            ?>
-
-                        </div>
-                    </div>
-                    <!-- end -->
-                    <div class="col-sm-4 text-right actions">
-                        <?php
-                        if (empty($tracking_off)) {
-                            ?>
-
-                            <div class="divToggle">
-                                <ol class="switches">
-                                    <li>
-                                        <input type="checkbox" name="allusers"
-                                               id="toggle" <?php echo !empty($tracking_status) ? "checked" : "" ?>         <?php SCF::js_controller("tracking.toggle") ?>
-                                               data-type="<?php echo !empty($tpd_report) ? $tpd_report["prefix"] : "" ?>"
-                                               data-id="<?php echo !empty($result["id"]) ? $result["id"] : $search["cache_id"]; ?>">
-                                        <label for="toggle">
-                                            Tracking
-                                            <span></span>
-                                            <span <?php SCF::js_controller("tracking.toggle.text") ?>><?php echo !empty($tracking_status) ? "ON" : "OFF" ?> </span>
-                                        </label>
-                                    </li>
-                                </ol>
-                            </div>
-                            <?php
-                        }
-                        if (empty($premium_content_user) && !empty($result['premium_data'])) {
-                            ?>
-                            <br>
-                            <div class="btn btn-dark-green premium-btn"
-                                 data-target="premium_data_found" <?php SCF::js_controller("modal.onclick_show"); ?>>
-                                UNLOCK PREMIUM
-                            </div>
-                            <?php
-                        }
-
-                        if (empty($disable_feedback) && !CustomerFeedback::check_feedback(!empty($tpd_report) ? $tpd_report["id"] : $search_data["cached_data"]["cache_id"], $user_id, !empty($tpd_report) ? $tpd_report : false)) {
-                            ?>
-                            <br>
-                            <div class="btn btn-gray rate_btn"
-                                 data-target="rating_report" <?php SCF::js_controller("modal.onclick_show"); ?>><span
-                                        class="si-star"></span> Rate This Report
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                </div>
-
-                <?php
-                //Removed temporary
-                $phone_owner = array_shift($search["meta"]["names"]);
-                if (0 && $phone_number_search && $phone_owner) {
-                    ?>              <br/>
-                    <div class="row phone_number_search_posibe_owner">
-                        <div class="col-xs-12 col-md-8">
-                            <strong>Possible Owner:</strong><span><?php echo($phone_owner); ?></span>
-                        </div>
-
-                        <div class="col-xs-12 col-md-4 text-right actions">
-                            <a href="<?php echo BASE_URL ?>" class="btn btn-dark-green"><i class="si-user"></i>Run Name
-                                Search</a>
-                        </div>
-                    </div>
-                    <?php
-                }
-                ?>
-                <?php
-
-                if ($phone_number_search) {
-                    ?>              <br/>
-                    <div class="row phone_number_search_posibe_owner">
-                        <div class="col-xs-6 col-md-6 col-lg-3 col-xl-12">
-                            <strong>Carrier: <p
-                                        style="font-weight: normal;"><?php echo($search["meta"]["carrier"] ?: ($get_ipq_phone["carrier"] ?: "N/A")); ?></p>
-                            </strong>
-                        </div>
-                        <div class="col-xs-6 col-md-6 col-lg-6 col-xl-6">
-                            <strong>Active: <span
-                                        class="active_box"><?php echo($get_ipq_phone["active"] ? "YES" : "NO") ?></span></strong>
-                            <strong>Pre-paid:<span
-                                        class="inactive_box"><?php echo(!empty($search["meta"]["is_prepaid"]) ? $search["meta"]["is_prepaid"] : ($get_ipq_phone["prepaid"] ? "YES" : "NO")); ?></span></strong>
-                            <strong>Line
-                                Type:<span> <?php echo($search["meta"]["line_type"] ?: ($get_ipq_phone["line_type"] ?: "N/A")); ?></span></strong>
-                        </div>
-                    </div>
-                    <?php
-                }
-                ?>
-
-                <?php if (!empty($result["bankruptcy"]) || !empty($result["judgment"]) || !empty($result["lien"]) || !empty($result["professional"]) || !empty($result["criminal"])) { ?>
-                    <div class="idi_records_summery">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p data-target="<?php echo (empty($premium_content_user) && !empty($result["bankruptcy"])) ? 'premium_data_found' : 'bankruptcy'; ?>" <?php echo (empty($premium_content_user) && !empty($result["bankruptcy"])) ? SCF::js_controller("modal.onclick_show") : SCF::js_controller("results.summary_link"); ?>>
-                                    <span class="si-cooperation"></span> <strong>Bankruptcies
-                                        :</strong> <?php echo (!empty($result["bankruptcy"])) ? "<label>Found</label>" : "Searched. None Found"; ?>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <p data-target="<?php echo (empty($premium_content_user) && !empty($result["judgment"])) ? 'premium_data_found' : 'judgment'; ?>" <?php echo (empty($premium_content_user) && !empty($result["judgment"])) ? SCF::js_controller("modal.onclick_show") : SCF::js_controller("results.summary_link"); ?>>
-                                    <span class="si-criminal-rec"></span> <strong>Judgments
-                                        :</strong> <?php echo (!empty($result["judgment"])) ? "<label>Found</label>" : "Searched. None Found"; ?>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <p data-target="<?php echo (empty($premium_content_user) && !empty($result["lien"])) ? 'premium_data_found' : 'lien'; ?>" <?php echo (empty($premium_content_user) && !empty($result["lien"])) ? SCF::js_controller("modal.onclick_show") : SCF::js_controller("results.summary_link"); ?>>
-                                    <span class="si-property"></span> <strong>Liens
-                                        :</strong> <?php echo (!empty($result["lien"])) ? "<label>Found</label>" : "Searched. None Found"; ?>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <p data-target="<?php echo (empty($premium_content_user) && !empty($result["professional"])) ? 'premium_data_found' : 'professional'; ?>" <?php echo (empty($premium_content_user) && !empty($result["professional"])) ? SCF::js_controller("modal.onclick_show") : SCF::js_controller("results.summary_link"); ?>>
-                                    <span class="si-account"></span> <strong>Professional Licenses
-                                        :</strong> <?php echo (!empty($result["professional"])) ? "<label>Found</label>" : "Searched. None Found"; ?>
-                                </p>
-                            </div>
-                            <?php if ($idi_show_criminal) { ?>
-                                <div class="col-md-6">
-                                    <p data-target="<?php echo (empty($premium_content_user) && !empty($result["criminal"])) ? 'premium_data_found' : 'criminal'; ?>"<?php echo (empty($premium_content_user) && !empty($result["criminal"])) ? SCF::js_controller("modal.onclick_show") : SCF::js_controller("results.summary_link"); ?>>
-                                        <span class="si-criminal-rec"></span> <strong>Possible Criminal
-                                            :</strong> <?php echo (!empty($result["criminal"])) ? "<label>Found</label>" : "Searched. None Found"; ?>
-                                    </p>
-                                </div>
-                            <?php } ?>
-                        </div>
-                    </div>
-                <?php } ?>
-            </div>
-            <?php
-
-            // Section: Known Aliases
-            $section_heading = $phone_number_search ? "People Associated with {$query_text}" : "Known Aliases";
-            $data_ref = $phone_number_search ? $search["meta"]["names"] : $result["names"];
-
-            $data_ref = !empty($data_ref) ? $data_ref : explode(',', $get_ipq_phone["name"]);
-            if ($data_ref[0] != 'N/A' && !empty($data_ref[0])) {
-                ?>
-                <div class="report-box known-aliases">
-                    <h3><?php echo $section_heading; ?> <span class="aliases-count">(<?php echo count($data_ref); ?>
-                            )</span></h3>
-
-                    <?php
-                    if (!empty($data_ref)) {
-                        ?>
-                        <ul>
-                            <?php
-                            foreach ($data_ref as $_known_name) {
-                                ?>
-                                <li class="al"><?php echo $_known_name; ?></li>
-                                <?php
-                            }
-
-                            if (count($data_ref) > 3) {
-                                ?>
-                                <li class="load-more-aliases more-aliases-mobile" <?php SCF::js_controller("accordion.show_more") ?>>
-                                    +<?php echo(count($data_ref) - 3); ?> More <i class="si-down"></i></li>
-                                <?php
-                            }
-
-                            if (count($data_ref) > 5) {
-                                ?>
-                                <li class="load-more-aliases" <?php SCF::js_controller("accordion.show_more") ?>>
-                                    +<?php echo(count($data_ref) - 5); ?> More <i class="si-down"></i></li>
-                                <?php
-                            }
-
-                            unset($_known_name);
-
-                            ?>
-                        </ul>
-                        <?php
-                    } else {
-                        ?>
-                        <p>Data from multiple sources shows that there are no publicly known aliases that have been
-                            published online.</p>
-                        <?php
-                    }
-                    unset($section_heading, $data_ref);
-                    ?>
-                </div>
-                <?php
-            }
-            // Section: VOIP Alert
-            if ((!empty($search["meta"]) && stripos($search["meta"]["line_type"], "VOIP") !== false) || (!empty($get_ipq_phone["VOIP"]) && $get_ipq_phone["VOIP"] !== false)) {
-                ?>
-
-                <div class="report-box voip-number-alert">
-
-
-                    <h3 class=" no-velocity"><span class="si-warning-fill"></span> VOIP Number Found ! </h3>
-
-                    <div class="accordion-btn" <?php SCF::js_controller("accordion.item") ?> ><span class="expand">What is this</span><span
-                                class="collapse">Collapse This</span> <i class="si-down"></i></div>
-
-                    <div class="accordion-content">
-                        <p>A "VOIP" number is a <label>Virtual Phone Number</label> used by someone to make calls to
-                            using a free service such as Skype or Google Voice numbers. Anyone can sign up for one
-                            choosing any area code they want. These numbers are free and can be used by anyone (good or
-                            bad). Virtual phone numbers are often used in <label>Money Scam or Romance Scams</label>.
-                            They can also be used to enable long-distance service without incurring long-distance
-                            charges and robocalling. But like we said before, VOIP numbers are usually used in scams.
-                        </p>
-                    </div>
-                </div>
-                <?php
-            }
-            // temp removing CTA due to change to IDI
-            // enabled the section
-            // CSI-7453 - Remove In-Report Criminal Records CTA
-            if (SEARCH_TYPE_NAME == $search_data["type"]) {
-                if ($_SESSION["cr_id"] != 0) {
-                    $details = CriminalRecords::get_user_search_details($user_id, $_SESSION["cr_id"]);
-                    ?>
-                    <!--div class="report-box criminal-records-found">
-                <h3><i class="si-warning"></i> <span class="name"><?php //echo $details["records_count"] ?></span> Possible Criminal Records found for <span class="name"><?php //echo ucwords($details["full_name"]); ?></span> in <span class="name"><?php //echo $details["state"] ?></h3>
-                <button type="button" class="btn btn-bordered" data-url="<?php //echo RELATIVE_URL . "criminal_report/{$details["full_name"]}-{$_SESSION["cr_id"]}" ?>" <?php SCF::js_controller("modal.criminal_records_popup.go");
-                    $_SESSION["cr_search"] = $query_text; ?>>View Report</button>
-            </div-->
-                    <?php
-                } else {
-                    ?>
-                    <!--div class="report-box criminal-records">
-                <h3><i class="si-criminal-rec"></i> Alert! <span class="name"> <?php //echo $query_text; ?></span>  has possible criminal records.</h3>
-                <button type="button" class="btn btn-bordered" data-url="<?php //echo $search_type_links[SEARCH_TYPE_CR] ?>" <?php SCF::js_controller("modal.criminal_records_popup.go");
-                    $_SESSION["cr_search"] = $query_text; ?>>Open Report</button>
-            </div-->
-                    <?php
-                }
-            } elseif (SEARCH_TYPE_PHONE == $search_data["type"]) { ?>
-                <!--div class="report-box criminal-records">
-            <h3><i class="si-criminal-rec"></i> Alert! <span class="name"> <?php //echo ($phone_owner); ; ?></span>  has possible criminal records.</h3>
-            <button type="button" class="btn btn-bordered" data-url="<?php //echo $search_type_links[SEARCH_TYPE_CR] ?>" <?php SCF::js_controller("modal.criminal_records_popup.go");
-                $_SESSION["cr_search"] = $phone_owner; ?>>Open Report</button>
-        </div-->
-
-
-            <?php }
-            // Section: Search Velocity
-            if (!$pwnd_and_IPQ_only) {
-                ?>
-                <div class="report-box search-velocity ss-velocity">
-
-                    <?php
-                    $class = '';
-                    $velocitybtn = '';
-                    $velocityClass = '';
-
-                    if (!empty($velocity) && array_sum($velocity)) {
-                        if ($velocity["total"] >= 3) {
-                            $class = 'high-velocity';
-                            $velocitybtn = '<div class="high-velocity-btn velocity-btn">High Velocity <i class="si-trending"></i></div>';
-                        } elseif ($velocity["total"] == 2) {
-                            $class = 'medium-velocity';
-                            $velocitybtn = '<div class="medium-velocity-btn velocity-btn">Medium Velocity <i class="si-trending"></i></div>';
-                        } else {
-                            $class = 'low-velocity';
-                            $velocitybtn = '<div class="low-velocity-btn velocity-btn">Low Velocity <i class="si-trending"></i></div>';
-                        }
-
-                        $velocityClass = 'has-velocity';
-                    } else {
-                        $velocityClass = 'no-velocity';
-                    }
-                    ?>
-
-                    <?php
-                    if (SEARCH_TYPE_NAME == $search_data["type"]) {
-                        $searchtype = 'name';
-                    } elseif (SEARCH_TYPE_PHONE == $search_data["type"]) {
-                        $searchtype = 'number';
-                    } elseif (SEARCH_TYPE_EMAIL == $search_data["type"]) {
-                        $searchtype = 'email';
-                    } elseif (SEARCH_TYPE_USERNAME == $search_data["type"]) {
-                        $searchtype = 'username';
-                    } elseif (SEARCH_TYPE_RAS == $search_data["type"]) {
-                        $searchtype = 'address';
-                    }
-                    ?>
-
-                    <h3 class="<?php echo $class; ?> <?php echo $velocityClass; ?>"><span
-                                class="total-times"><?php if (!empty($velocity) && array_sum($velocity)) {
-                                    ?><?php echo $velocity["total"]; ?><?php
-                                                    } else {
-                                                        echo "0";
-                                                    } ?></span>times this <?php echo $searchtype; ?> has been
-                        searched <?php echo $velocitybtn; ?></h3>
-
-                    <div class="accordion-btn" <?php SCF::js_controller("accordion.item") ?>><span class="expand">What is this</span><span
-                                class="collapse">Collapse This</span> <i class="si-down"></i></div>
-
-                    <div class="accordion-content">
-                        <p>This is the number of times this <?php echo $searchtype; ?> has been searched. The higher the
-                            numbers, the greater the number of <?php echo $searchtype; ?> looking for information on
-                            this person. If not a celebrity, a high Search Velocity count could indicate a fake persona
-                            used by a scammer in multiple scams.</p>
-                        <?php
-                        if (!empty($velocity) && array_sum($velocity)) {
-                            ?>
-                            <ul>
-                                <li>Last 24 Hours <span><?php echo $velocity["day"]; ?></span></li>
-                                <li>This Month <span><?php echo $velocity["month"]; ?></span></li>
-                                <li>This Year <span class="this-year"><?php echo $velocity["year"]; ?></span></li>
-                            </ul>
-                            <?php
-                        } else {
-                            ?>
-                            <p>There is no record of a search for <span><?php echo $query_text ?></span> as of
-                                <span><?php echo date_create("now", timezone_open("America/Los_Angeles"))->format("jS M Y g:ia"); ?></span>.<br/>This
-                                is updated each time you access this Report. Come back often to get the latest Search
-                                count.</p>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                </div>
-                <?php
             }
 
-            if (!empty($pwned_data)) {
-                ?>
-                <div <?php SCF::js_controller("results.section.phonebreach") ?> class="report-box-panel red">
-                    <div class="panel-heading"><strong>Reported in <span><?php echo count($pwned_data->sites) ?></span>
-                            Data Breach Incidents</strong>
-                        <div class="right-align">First : <label><?php echo $pwned_data->firstDate ?></label>&nbsp;&nbsp;&nbsp;&nbsp;Last
-                            : <label><?php echo $pwned_data->lastDate ?></label></div>
-                    </div>
-                    <div class="panel-body">
-                        <?php echo $phone ? $phone : $email; ?> was involved in
-                        <b><?php echo count($pwned_data->sites) ?> data breach incidents,</b> the earliest of which was
-                        <b><?php echo $pwned_data->firstDate ?></b> and the latest of which was
-                        <b><?php echo $pwned_data->lastDate ?>.</b>
-                        <div class="view-btn right-align">View List <i class="si-down"></i></div>
+            if ($token_session_data["membership"]["id"] == "74") {
+            
+                $membership = Membership::get( PLAN_UNLIMITED_3_DAY_SS_2894 );
+                $token_session_data["membership_id"] = PLAN_UNLIMITED_3_DAY_SS_2894;
+                $token_session_data["membership"] = $membership;
 
-                        <div class="data-breach-box" style="display: none">
-                            <div class="data-report">
-                                <table class="scf-table" style="display: table;">
-                                    <thead>
-                                    <tr>
-                                        <th>Website</th>
-                                        <th>Data Breach Info</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php
-                                    foreach ($pwned_data->sites as $key => $pwned_phone_site) {
-                                        ?>
-                                        <tr>
-                                            <td>
-                                                <img src="<?php echo $pwned_phone_site->LogoPath ?>"
-                                                     alt="<?php echo $pwned_phone_site->Title ?>"
-                                                     style="background-image: url(&quot;<?php echo $pwned_phone_site->LogoPath ?>&quot;);"
-                                                     decoding="async" loading="lazy">
-                                                <a><?php echo $pwned_phone_site->Title ?></a>
-                                            </td>
-                                            <td>
-                                                <p><?php echo $pwned_phone_site->Description ?></p>
-                                                <p><strong>Compromised data:</strong>
-                                                    <span><?php echo implode(", ", $pwned_phone_site->Compromised_Data) ?></span>
-                                                </p>
-                                            </td>
-                                        </tr>
-                                        <?php
-                                    }
-                                    ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <?php
             }
-            ?>
-            <?php
-            // Section: Name Origin and Popularity
-            if (!empty($name_origin)) {
-                ?>
-                <div class="report-box orgin-pop">
-                    <h3>Name Origin and Popularity</h3>
-                    <div class="row">
-                        <div class="col-md-3 tab-div-left">
-                            <span class="name-op"><?php echo $name_origin["name"] ?></span>
-                        </div>
-                        <div class="col-md-9 tab-div-right">
-                            <div class="op-list"><span>Gender</span>
-                                <p><?php echo ("m" == $name_origin["gender"]) ? "Male" : "Female"; ?></p></div>
-                            <?php
-                            if (!empty($name_origin["origins"])) {
-                                ?>
-                                <div class="op-list"><span>Usage</span>
-                                    <p><?php echo implode(", ", array_column(unserialize($name_origin["origins"]), "usage_full")); ?></p>
-                                </div>
-                                <?php
-                            }
+        }
 
-                            if (!empty($name_origin["aliases"])) {
-                                ?>
-                                <div class="op-list"><span>Possible Aliases</span>
-                                    <p><?php echo implode(", ", unserialize($name_origin["aliases"])); ?></p></div>
-                                <?php
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-                <?php
-            }
-            if (!empty($phone_recording_data)) {
-                ?>
+        $payment_page_string = "";
 
-                <div class="scf-robocall">
-                    <h4>Robocall Warning</h4>
-                    <p><?= $query_text; ?> is a Robocall. Do not answer, you might be receiving a scam call.</p>
-                    <audio controls controlsList="nodownload">
-                        <source src="<?= $phone_recording_data["recording_src"] ?>" type="audio/mp3">
-                        Your browser does not support the audio element.
-                    </audio>
-                    <h5>Transcript :</h5>
-                    <p><?= $phone_recording_data["transcript"] ?: "<span>Not available </span>" ?></p>
-                    <h5>Call Activity : <span><?= $phone_recording_data["activity"] ?></span></h5>
-                    <p>Last detected <?= $phone_recording_data["last_detected"] ?></p>
-                </div>
-            <?php } ?>
+        if ( ! empty( $user_id ) ) {
 
-            <?php
+            $payment_page_string = "register/checkout-cross.php";
 
-            if ($get_ipq_email) {
-                ?>
-                <div class="phone-fraud-score ipq-email" <?php SCF::js_controller("results.section.sort_ipq") ?>>
+        } else {
+                $payment_page_string = "register/checkout-b.php";
 
-                    <div class="row ">
-                        <div class="col-md-8 col-xs-12"><h4><i class="si-email"></i>Email Address Analysis: </h4></div>
-                        <div class="col-md-4 col-xs-12"><label class="title-box">Email : <span
-                                        style="color: #0F63EC;"><?php echo $email; ?></span></label></div>
-                    </div>
-                    <div class="item primary">
-                        <h5><span class="si-tip"></span> Fraud Score: <span
-                                    class="lable_right"><?php echo $get_ipq_email["fraud_score"]; ?></span></h5>
-                        <p>Ranging from 0 to 100, the higher the Fraud Score, the higher the instances the phone number
-                            has been flagged for suspicious or fraudulent activity. </p>
-                    </div>
-                    <div class="item primary">
-                        <h5><span class="si-done-circle"></span> Possible First Name of Owner: <span
-                                    class="item-value"><?php echo $get_ipq_email["first_name"]; ?></span></h5>
-                    </div>
+        }
+        $sub_page = ( isset( $token_session_data["sub_page"] ) ) ? $token_session_data["sub_page"] : $payment_page_string;
 
-                    <div class="item <?php echo ($get_ipq_email["valid"]) ? '' : 'error'; ?>">
-                        <div class="row ">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_email["valid"]) ? 'si-done-circle' : 'si-warning-fill'; ?>"></span>
-                                    Valid :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_email["valid"]) ? "yes" : "no"; ?>"><?php echo ($get_ipq_email["valid"]) ? "Yes" : "No"; ?></span>
-                            </div>
-                        </div>
-                        <p>Does this email address appear valid?</p>
-                    </div>
-                    <div class="item <?php echo ($get_ipq_email["disposable"]) ? 'error' : ''; ?>">
-                        <div class="row ">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_email["disposable"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Disposable :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_email["disposable"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_email["disposable"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p>Is this email suspected of belonging to a temporary or disposable mail service? Usually
-                            associated with fraudsters and scammers.</p>
-                    </div>
+        if($sub_page == "register/checkout-b.php" && empty( $user_id ) && $_SESSION["last_search_type"] == SEARCH_TYPE_EMAIL){
+            $_SESSION["new_user_registered"] = false;
+            $_SESSION["new_user_redirect_url"] = $token_session_data["query_data"]["name"];
+        }
+
+        $query_data = ! empty( $token_session_data["query_data"] ) ? $token_session_data["query_data"] : "";
+        $image_search_data = ! empty( $token_session_data["image_search_data"] ) ? $token_session_data["image_search_data"] : "";
+
+        if ( empty( $post_data["billing_country"] ) ) $post_data["billing_country"] = "US";
+
+		if( ! empty( $dashboard_membership_addon_request ) ){
+
+			$id = ! empty( $dashboard_membership_addon_request ) ? $dashboard_membership_addon_request : $id;
+
+            $token_session_data["cancel_old_plan_if_combined"] = $_session["tokens"][ $token ]["cancel_old_plan_if_combined"] = $id;
+			$_SESSION["dashboard_addon_request"] = true;
+
+            if ( ! empty( $id ) && ( $membership = Membership::get( $id ) ) ) {
+                $token_session_data["membership_id"] = $id;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+
+            } else $redirect = RELATIVE_URL;
+            SYSTEM::redirect( $redirect );
+
+        }
+        if( ! empty( $criminal_records_addon ) ){
+
+			$id = ! empty( $criminal_records_addon ) ? $criminal_records_addon : $id;
+
+           	$_SESSION["criminal_records_addon_request"] = true;
+
+            if ( ! empty( $id ) && ( $membership = Membership::get( $id ) ) ) {
+                $token_session_data["membership_id"] = $id;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+
+            } else $redirect = RELATIVE_URL;
+            SYSTEM::redirect( $redirect );
+
+        }
+
+        if ( empty( $token_session_data["membership_id"] ) ) {
 
 
-                    <div class="item hidden <?php echo ($get_ipq_email["suspect"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_email["suspect"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Suspect :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_email["suspect"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_email["suspect"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p>This value indicates if the mail server is currently replying with a temporary error and
-                            unable to verify the email address.</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_email["leaked"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_email["leaked"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Leaked :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_email["leaked"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_email["leaked"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p>Was this email address associated with a recent database leak from a third party? Leaked
-                            accounts pose a risk as they may have become compromised during a database breach.</p>
-                    </div>
+            if ( ! empty( $id ) && ( $membership = Membership::get( $id ) ) ) {
+                $token_session_data["membership_id"] = $id;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
 
+            } else $redirect = RELATIVE_URL;
+            SYSTEM::redirect( $redirect );
 
-                    <div class="item hidden primary">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_email["user_activity"] == 'low') ? '' : ''; ?>"></span>
-                                    User Activity :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn high"><?php echo $get_ipq_email["user_activity"]; ?></span></div>
-                        </div>
-                        <p>Frequency at which this email address makes legitimate purchases, account registrations, and
-                            engages in legitimate user behavior online.</p>
-                    </div>
-                    <div class="view_more" <?php SCF::js_controller("results.section.view_ipq") ?>>
-                        <h6 class="hdown">View More Data <label>+3</label> <span class="si-down"></span></h6>
-                        <h6 class="hup" style="display: none;">View Less Data <span class="si-up"></span></h6>
-                    </div>
-                </div>
-                <?php
+        } else {
+
+            $id = ! empty( $post_data["addon_id"] ) ? $post_data["addon_id"] : $id;
+            if ( ! empty( $post_data["addon_id"] ) && $membership = Membership::get( $post_data["addon_id"] ) ) {
+
+                $token_session_data["membership_id"] = $id;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+                SYSTEM::redirect( $redirect );
+
+            } elseif ( SYSTEM::request_post( "change_plan" ) && PLAN_UNLIMITED_SAVE_A_SALE == SYSTEM::request_post( "change_plan" ) && $membership = Membership::get( PLAN_UNLIMITED_SAVE_A_SALE ) ) {
+
+                $token_session_data["membership_id"] = PLAN_UNLIMITED_SAVE_A_SALE;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+                SYSTEM::redirect( $redirect );
+
             }
 
-            ?>
-            <?php
-            if ($get_ipq_phone) {
-                ?>
-                <div class="phone-fraud-score ipq-phone" <?php SCF::js_controller("results.section.sort_ipq") ?>>
-                    <div class="row ">
-                        <div class="col-md-8 col-xs-12"><h4><i class="si-phone"></i>Phone Number Analysis: </h4></div>
-                        <div class="col-md-4 col-xs-12"><label class="title-box">Phone : <span
-                                        style="color: #0F63EC;"><?php echo $phone; ?></span></label></div>
-                    </div>
+            if ( PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL == $token_session_data["membership_id"] ) {
 
-                    <div class="item primary ipq_order">
-                        <h5><span class="si-tip"></span> Fraud Score: <span
-                                    class="lable_right"><?php echo $get_ipq_phone["fraud_score"]; ?></span></h5>
-                        <p>Ranging from 0 to 100, the higher the Fraud Score, the higher the instances the phone number
-                            has been flagged for suspicious or fraudulent activity.</p>
-                    </div>
-                    <div class="item <?php echo ($get_ipq_phone["valid"]) ? '' : 'error'; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["valid"]) ? 'si-done-circle' : 'si-warning-fill'; ?>"></span>
-                                    Valid:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["valid"]) ? "yes" : "no"; ?>"><?php echo ($get_ipq_phone["valid"]) ? "Yes" : "No"; ?></span>
-                            </div>
-                        </div>
-                        <p> Is the phone number properly formatted and considered valid based on assigned phone numbers
-                            available to carriers in that country?</p>
-                    </div>
-                    <div class="item <?php echo ($get_ipq_phone["active"]) ? '' : 'error'; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["active"]) ? 'si-done-circle' : 'si-warning-fill'; ?>"></span>
-                                    Active:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["active"]) ? "yes" : "no"; ?>"><?php echo ($get_ipq_phone["active"]) ? "Yes" : "No"; ?></span>
-                            </div>
-                        </div>
-                        <p> Is this phone number a live usable phone number that is currently active?</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["VOIP"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["VOIP"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    VOIP:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["VOIP"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["VOIP"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p>Is this phone number a Voice Over Internet Protocol (VOIP) or digital phone number?</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["prepaid"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["prepaid"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Prepaid:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["prepaid"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["prepaid"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p> Is this phone number associated with a prepaid service plan?</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["risky"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["risky"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Risky:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["risky"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["risky"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p>Is this phone number associated with fraudulent activity, scams, robo calls, fake accounts,
-                            or other unfriendly behavior?</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["leaked"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["leaked"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Leaked:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["leaked"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["leaked"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p> Has this phone number recently been exposed in an online database breach or act of
-                            compromise.</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["spammer"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["spammer"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Spammer:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["spammer"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["spammer"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p> Indicates if the phone number has recently been reported for spam or harassing
-                            calls/texts.</p>
-                    </div>
-                    <div class="item hidden <?php echo ($get_ipq_phone["do_not_call"]) ? 'error' : ''; ?>">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span
-                                            class="<?php echo ($get_ipq_phone["do_not_call"]) ? 'si-warning-fill' : 'si-done-circle'; ?>"></span>
-                                    Do Not Call:</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn <?php echo ($get_ipq_phone["do_not_call"]) ? "no" : "false"; ?>"><?php echo ($get_ipq_phone["do_not_call"]) ? "True" : "False"; ?></span>
-                            </div>
-                        </div>
-                        <p> Indicates if the phone number is listed on any Do Not Call (DNC) lists. Only supported in US
-                            and CA. This data may not be 100% up to date with the latest DNC blacklists.</p>
-                    </div>
+                $save_a_sale_enabled = ($device == "mobile") ? false : true;
 
-                    <div class="item hidden primary">
-                        <div class="row">
-                            <div class="col-md-9 col-xs-8"><h5><span class=""></span> User Activity :</h5></div>
-                            <div class="col-md-3 col-xs-4"><span
-                                        class="btn high"><?php echo $get_ipq_phone["user_activity"]; ?></span></div>
-                        </div>
-                        <p>Frequency at which this phone number makes legitimate purchases, account registrations, and
-                            engages in legitimate user behavior online.</p>
-                    </div>
-
-                    <div class="item hidden primary primary-text">
-                        <h5>Carrier : <span class="item-value"><?php echo $get_ipq_phone["carrier"]; ?></span></h5>
-                        <p> The carrier (service provider) this phone number has been assigned to or "N/A" if
-                            unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>Line Type : <span class="item-value"><?php echo $get_ipq_phone["line_type"]; ?></span></h5>
-                        <p>The type of line this phone number is associated with (Toll Free, Mobile, Landline,
-                            Satellite, VOIP, Premium Rate, Pager, etc...) or "N/A" if unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>Country : <span class="item-value"><?php echo $get_ipq_phone["country"]; ?></span></h5>
-                        <p>The two character country code for this phone number.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>City : <span class="item-value"><?php echo $get_ipq_phone["city"]; ?></span></h5>
-                        <p>City of the phone number if available or "N/A" if unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>Zip Code : <span class="item-value"><?php echo $get_ipq_phone["zip_code"]; ?></span></h5>
-                        <p> Zip or Postal code of the phone number if available or "N/A" if unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>Region : <span class="item-value"><?php echo $get_ipq_phone["region"]; ?></span></h5>
-                        <p> Region (state) of the phone number if available or "N/A" if unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>Timezone: <span class="item-value"><?php echo $get_ipq_phone["timezone"]; ?></span></h5>
-                        <p>Timezone of the phone number if available or "N/A" if unknown.</p>
-                    </div>
-                    <div class="item hidden primary primary-text">
-                        <h5>SMS Email: <span class="item-value"><?php echo $get_ipq_phone["sms_email"]; ?></span></h5>
-                        <p>Additional details.</p>
-                    </div>
-                    <div class="view_more" <?php SCF::js_controller("results.section.view_ipq") ?>>
-                        <h6 class="hdown">View More Data <label>+14</label> <span class="si-down"></span></h6>
-                        <h6 class="hup" style="display: none;">View Less Data <span class="si-up"></span></h6>
-                    </div>
-                </div>
-                <?php
             }
 
-            ?>
+        }
 
-            <?php
-            if (!$pwnd_and_IPQ_only) {
-                // Section: Summary
-                ?>
-                <div class="report-box rb-summary<?php echo !empty($premium_only_data) ? " premium_data_included" : ""; ?>">
-                    <h3><span class="si-tip"></span> Summary</h3>
-                    <div class="row summary-lists">
-                        <?php
+        if( ! empty( $_SESSION["mobile_app_user"] ) ){
 
-                        // Section: Summary
-                        $section_summary = [
-                            ["icon" => "image", "key" => "images", "caption" => "Photos"],
-                            ["icon" => "user", "key" => "relationships", "caption" => "Relationships"],
-                            ["icon" => "phone", "key" => "phones", "caption" => "Phone No"],
-                            ["icon" => "username", "key" => "usernames", "caption" => "Usernames"],
-                            ["icon" => "location", "key" => "locations", "caption" => "Addresses"],
-                            ["icon" => "email", "key" => "emails", "caption" => "Emails"],
-                            ["icon" => "website", "key" => "urls", "caption" => "Websites"],
-                            ["icon" => "jobs", "key" => "jobs_in_detail", "caption" => "Jobs"],
-                            ["icon" => "education", "key" => "education_in_detail", "caption" => "Education"]
-                        ];
-
-                        $idi_sections = ["bankruptcy", "lien", "judgment", "professional", "criminal"];
-
-                        if (!empty($premium_content_user)) {
-                            if (!empty($result["bankruptcy"])) {
-                                array_push($section_summary, ["icon" => "cooperation", "key" => "bankruptcy", "caption" => "Bankruptcies"]);
-                            }
-                            if (!empty($result["lien"])) {
-                                array_push($section_summary, ["icon" => "property", "key" => "lien", "caption" => "Liens"]);
-                            }
-                            if (!empty($result["judgment"])) {
-                                array_push($section_summary, ["icon" => "criminal-rec", "key" => "judgment", "caption" => "Judgments"]);
-                            }
-                            if (!empty($result["professional"])) {
-                                array_push($section_summary, ["icon" => "account", "key" => "professional", "caption" => "Professional"]);
-                            }
-                            if (!empty($result["criminal"])) {
-                                array_push($section_summary, ["icon" => "criminal-rec", "key" => "criminal", "caption" => "Criminal"]);
-                            }
-                        }
-
-
-                        foreach ($section_summary as $index => $_summary) {
-                            $summary_count = ("relationships" == $_summary["key"] ? count($result["associated_people"]) : 0) + (!empty($result[$_summary["key"]]) ? count($result[$_summary["key"]]) : 0);
-                            $section_summary[$index]["count"] = $summary_count;
-                        }
-
-                        array_multisort(array_column($section_summary, 'count'), SORT_DESC, $section_summary);
-
-                        foreach ($section_summary as $_summary) {
-                            ?>
-                            <div class="col-md-4">
-                                <div class="jump-link <?php echo (in_array($_summary['key'], $idi_sections)) ? 'idi_summary' : ''; ?>"
-                                     data-target="<?php if ($_summary["key"] == 'jobs_in_detail') {
-                                            echo 'jobs';
-                                                  } elseif ($_summary["key"] == 'education_in_detail') {
-                                                      echo 'educations';
-                                                  } else {
-                                                      echo $_summary["key"];
-                                                  } ?>" <?php echo SCF::js_controller("results.summary_link"); ?>><span
-                                            class="si-<?php echo $_summary["icon"] ?>"></span><?php echo $_summary["caption"] ?>
-                                    <label class='<?php echo ($_summary["count"] == 0) ? "btn_zero" : ""; ?>'><?php echo $_summary["count"]; ?></label>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <div class="sm-date">
-                        <?php
-                        if (!is_null($date_range["earliest"]) || !is_null($timestamp)) { ?>
-                            <p><span class="si-calendar"></span> Earliest Validated
-                                <span><?php echo date("Y", $date_range["earliest"]) ?><span></p>
-                        <?php } ?>
-                        <?php if (!is_null($date_range["latest"]) || !is_null($timestamp)) { ?>
-                            <p><span class="si-calendar"></span> Last Confirmed
-                                <span><?php echo date("Y", $date_range["latest"]) ?><span></p>
-                        <?php } ?>
-                    </div>
-                </div>
-
-                <!-- Oline accounts section -->
-                <div class="report-box online-accounts">
-                    <h2><span class="si-image"></span>Online Accounts<label>18</label></h2>
-                    <p class="box-title">Based on data from third parties, it's highly likely this email has the
-                        following accounts. We're just not able to provide exact profile link. The account link (URL)
-                        might have changed. Go directly to the following sites to search more.</p>
-                    <p class="box-title searched-data"><span class="email-label">Email Address :</span>
-                        david.smith@gmail.com</p>
-                    <div class="row">
-                        <div class="category">
-                            <div class="cat-tag">Social Media</div>
-                            <div class="items-wrapper">
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/facebook.svg"
-                                                    alt="facebook" decoding="async" loading="lazy"/></span> facebook.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/instagram.svg"
-                                                    alt="instagram" decoding="async" loading="lazy"/></span>
-                                        instagram.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/twitter.svg"
-                                                    alt="twitter" decoding="async" loading="lazy"/></span> twitter.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/linkedin.svg"
-                                                    alt="linkedin" decoding="async" loading="lazy"/></span> linkedin.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/tinder.svg"
-                                                    alt="tinder" decoding="async" loading="lazy"/></span> tinder.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/pinterest.svg"
-                                                    alt="pinterest" decoding="async" loading="lazy"/></span>
-                                        pinterest.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/onlyfans.svg"
-                                                    alt="onlyfans" decoding="async" loading="lazy"/></span> onlyfans.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                                <div class="item"
-                                     data-target="holehe-popup" <?php SCF::js_controller("holehe.onclick_show"); ?>>
-                                    <div class="item-inner"><span class="icon-image"><img
-                                                    src="<?php echo $current_template_assets_url; ?>/images/social-icons-cercle/pornhub.svg"
-                                                    alt="pornhub" decoding="async" loading="lazy"/></span> pornhub.com
-                                    </div>
-                                    <span class="si-share"></span></div>
-                            </div>
-                        </div>
-                        <div class="view-more">View More Associate Websites <label>+10</label> <span
-                                    class="si-down"></span></div>
-                    </div>
-                </div>
-
-                <?php
-                // Section: Photos
-                if (!empty($result["images"])) {
-                    $count = count($result["images"]);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.images") ?>
-                            class="report-box img<?php echo(!empty($premium_only_data["images"]) && count($premium_only_data["images"]) ? " premium_data_included" : ""); ?>">
-                        <h2><span class="si-image"></span>Photos<label><?php echo $count ?></label></h2>
-                        <p class="box-title">These photos may belong to the person you're researching.</p>
-                        <div class="row">
-                            <?php
-                            $duplicates = [];
-                            foreach ($result["images"] as $index => $data) {
-                                $url_type = SCF::get_url_type($data);
-                                $web_link = !empty($link_types[$url_type]) ? $link_types[$url_type][0] : $data;
-                                $uri = parse_url($web_link);
-
-                                if (in_array($web_link, $duplicates)) {
-                                    continue;
-                                } else {
-                                    $duplicates[] = $web_link;
-                                }
-
-                                if ("facebook" == $url_type) {
-                                    $data = IMG_CDN_URL . "no-image.png";
-                                }
-
-                                ?>
-                                <div class="col-sm-6 col-md-3 data-point">
-                                    <div class="box-col<?php echo isset($premium_only_data["images"][$index]) ? " premium_data_activated" : ""; ?>">
-                                        <img data-target="<?php echo $data; ?>" <?php SCF::js_controller("lnt") ?>
-                                             src="<?php echo SCF::imgcdn_url($data); ?>" alt="User Image"
-                                             style="background-image: url('<?php echo SCF::imgcdn_url($data); ?>');"
-                                             decoding="async" loading="lazy"/>
-                                        <p>First
-                                            Validated: <?php echo !empty($meta_data["thumbs"][$index]["first_seen"]) ? $meta_data["thumbs"][$index]["first_seen"] : "-"; ?></p>
-                                        <p>Last
-                                            Confirmed: <?php echo !empty($meta_data["thumbs"][$index]["last_seen"]) ? $meta_data["thumbs"][$index]["last_seen"] : "-"; ?></p>
-                                        <a class="box-link" href="<?php echo $web_link; ?>" target="_blank">Found
-                                            in <?php echo array_slice(explode(".", $uri["host"]), -2)[0]; ?></a>
-                                    </div>
-                                </div>
-                                <?php
-                            }
-                            unset($index, $data, $uri);
-                            ?>
-                        </div>
-                        <?php
-                        if ($count > 4) {
-                            ?>
-                            <div class="text-right">
-                                <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                    <i>Show Less</i> <span class="si-up"></span></div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.images") ?> class="report-box no-results">
-                        <h2><span class="si-image"></span>Photos</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>We searched popular websites and found no publicly viewable photos that are directly
-                                associated with the person of interest.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-
-                ?>
-
-                <?php
-                //New relationships breackdown stuctre
-
-                if (!empty($result["relationships"]) || !empty($result["associated_people"])) {
-                    $count = count($result["relationships"]) + count($result["associated_people"]);
-
-                    /* $relationship_types = [
-                    "/family|friend|work|^\$/im" => array( "Family / Friends", "#E94A74" ),
-                    "/other/i" => array( "Followers", "#4F8BEB" ),
-                    "/associates/i" => array( "Associated People", "#470FAA" )
-                    ]; */
-                    $relationship_types = [
-                        "/p/i" => array("Parents", "#2AC984"),
-                        "/m/i" => array("Spouse", "#470FAA"),
-                        "/s/i" => array("Siblings", "#E52727"),
-                        "/c/i" => array("Children", "#E94A74"),
-                        "/i/i" => array("In-Laws", "#0F63EC"),
-                        "/r/i" => array("Other Relatives", "#26273C"),
-                        "/f/i" => array("Friends", "#767676"),
-                        "/n|o/i" => array("Neighbors", "#E94A74"),
-                        "/a/i" => array("Associates", "#4F5065"),
-                        "/w/i" => array("Co-workers", "#F8933C"),
-                        "/l/i" => array("Landlords", "#00B191"),
-                        "/t/i" => array("Tenants", "#4F8BEB")
-                    ];
-                    $relationship_types_other = [
-                        "/family|friend|work|^\$/im" => array("Family / Friends", "#E94A74"),
-                        "/spouse/i" => array("Spouse", "#E94A74"),
-                        "/siblings/i" => array("Siblings", "#00B191"),
-                        "/law/i" => array("In-Law", "#4F8BEB"),
-                        "/other/i" => array("Other Relatives", "#F8933C"),
-                        "/neighbours/i" => array("Neighbors", "#D98A78"),
-                        "/associates/i" => array("Associates", "#470FAA")
-                    ];
-
-                    $relationship_list = array_merge(is_array($result["relationships"]) ? $result["relationships"] : [], is_array($result["associated_people"]) ? $result["associated_people"] : []);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.relationships") ?>
-                            class="report-relationships report-box-group<?php echo(!empty($premium_only_data["relationships"]) && count($premium_only_data["relationships"]) ? " premium_data_included" : ""); ?>">
-                        <div class="report-box" data-type="<?php echo SEARCH_TYPE_NAME; ?>">
-                            <h2><span class="si-user"></span>Relationships <label><?php echo $count ?></label></h2>
-                            <p class="box-title">Based on available relationship data from various websites, there is a
-                                strong possibility that the people listed here are either relatives or friends.</p>
-
-                            <?php foreach ($relationship_types as $_pattern => $_title) { ?>
-                                <div class="relationships-box type-family" <?php SCF::js_controller("results.empty_relationship"); ?>>
-                                    <p class="relationship_label"><?php echo $_title[0]; ?></p>
-                                    <div class="row relationships_row">
-                                        <?php
-                                        foreach ($relationship_list as $rel_index => $rel_data) {
-                                            if (!preg_match($_pattern, $meta_data["relationships"][$rel_index]["subtype"])) {
-                                                continue;
-                                            }
-                                            ?>
-                                            <div class="col-sm-6 col-md-3 data-point">
-                                                <div class="box-col<?php echo isset($premium_only_data["relationships"][$rel_index]) ? " premium_data_activated" : ""; ?>"
-                                                     style="border-left: 4px solid <?php echo $_title[1]; ?>;"
-                                                     data-query="<?php echo $rel_data["name"] ?? $rel_data ?>" <?php SCF::js_controller("search.form_run_search") ?>>
-                                                    <!--<div class="box-col<?php echo isset($premium_only_data["relationships"][$rel_index]) ? " premium_data_activated" : ""; ?>" style="border-left: 4px solid <?php echo $_title[1]; ?>;" <?php echo SCF::js_controller("search.run_search_specialist"); ?> data-query="<?php echo 'relations'; ?>" data-value="<?php echo $rel_data["name"] ?? $rel_data; ?>" data-type="name">-->
-                                                    <a class="box-name"
-                                                       data-id="<?php echo $meta_data["relationships"][$rel_index]["category"]; ?>"
-                                                       title="<?php echo $rel_data["name"] ?? $rel_data; ?>"><?php echo $rel_data["name"] ?? $rel_data; ?></a>
-                                                    <p>
-                                                        Age: <?php echo !empty($meta_data["relationships"][$rel_index]["age"]) ? $meta_data["relationships"][$rel_index]["age"] : (!empty($rel_data["age"]) ? $rel_data["age"] : "-"); ?></p>
-                                                </div>
-                                            </div>
-                                        <?php } ?>
-                                    </div>
-                                </div>
-                            <?php } ?>
-                            <?php
-                            foreach ($relationship_types_other as $_pattern => $_title) { ?>
-                                <div class="relationships-box type-family" <?php SCF::js_controller("results.empty_relationship"); ?>>
-                                    <p class="relationship_label"><?php echo $_title[0]; ?></p>
-                                    <div class="row relationships_row">
-                                        <?php
-                                        foreach ($relationship_list as $rel_index => $rel_data) {
-                                            if (!preg_match($_pattern, $meta_data["relationships"][$rel_index]["category"]) || !empty($meta_data["relationships"][$rel_index]["subtype"])) {
-                                                continue;
-                                            }
-                                            ?>
-                                            <div class="col-sm-6 col-md-3 data-point">
-                                                <div class="box-col<?php echo isset($premium_only_data["relationships"][$rel_index]) ? " premium_data_activated" : ""; ?>"
-                                                     style="border-left: 4px solid <?php echo $_title[1]; ?>;"
-                                                     data-query="<?php echo $rel_data["name"] ?? $rel_data; ?>" <?php SCF::js_controller("search.form_run_search") ?>>
-                                                    <!--<div class="box-col<?php echo isset($premium_only_data["relationships"][$rel_index]) ? " premium_data_activated" : ""; ?>" style="border-left: 4px solid <?php echo $_title[1]; ?>;"  <?php echo SCF::js_controller("search.run_search_specialist"); ?> data-query="<?php echo 'relations'; ?>" data-value="<?php echo $rel_data["name"] ?? $rel_data; ?>" data-type="name">-->
-                                                    <a class="box-name"
-                                                       data-id="<?php echo $meta_data["relationships"][$rel_index]["category"]; ?>"
-                                                       title="<?php echo $rel_data["name"] ?? $rel_data; ?>"><?php echo $rel_data["name"] ?? $rel_data; ?></a>
-                                                    <p>
-                                                        Age: <?php echo !empty($data_ref[$index]["age"]) ? $data_ref[$index]["age"] : (!empty($rel_data["age"]) ? $rel_data["age"] : "-"); ?></p>
-                                                </div>
-                                            </div>
-                                        <?php } ?>
-                                    </div>
-                                </div>
-                            <?php } ?>
-
-                        </div>
-                    </div>
-                    <?php
-                    unset($_pattern, $_title);
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.relationships") ?> class="report-box no-results">
-                        <h2><span class="si-user"></span>Relationships</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data"/>
-                            <p>We searched current and archived data sources but didn't find find relatives, friends, or
-                                social media followers that can be clearly linked to the person of interest.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-                ?>
-                <?php
-
-                // Section: Addresses
-                if (!empty($result["locations"])) {
-                    $count = count($result["locations"]);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.locations") ?>
-                            class="report-box-location report-box<?php echo(!empty($premium_only_data["locations"]) && count($premium_only_data["locations"]) ? " premium_data_included" : ""); ?>"
-                            data-type="<?php echo SEARCH_TYPE_RAS; ?>">
-                        <h2><span class="si-location"></span>Map and Locations for <?php echo $query_text; ?>
-                            <label><?php echo $count ?></label></h2>
-                        <p class="box-title">These addresses may belong to the person you're searching for.</p>
-                        <div class="row">
-                            <?php
-                            foreach ($result["locations"] as $index => $data) {
-                                ?>
-                                <div class="col-sm-6 col-md-3 data-point">
-                                    <div class="box-col<?php echo isset($premium_only_data["locations"][$index]) ? " premium_data_activated" : ""; ?>">
-                                        <iframe src="https://maps.google.com/maps?q=<?php echo rawurlencode($data) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed"
-                                                width="100%" height="100" allowfullscreen="" aria-hidden="false"
-                                                tabindex="0"></iframe>
-                                        <?php
-                                        $split_location = explode(",", $data);
-                                        $split_city = $split_location[0] . ",";
-                                        unset($split_location[0]);
-                                        $split_state = implode(",", $split_location);
-                                        ?>
-                                        <h5 title="<?php echo $data ?>"><?php echo "<span>" . $split_city . "</span>" . $split_state; ?></h5>
-                                        <p>First
-                                            Validated: <?php echo !empty($meta_data["locations"][$index]["first_seen"]) ? $meta_data["locations"][$index]["first_seen"] : "-"; ?></p>
-                                        <p>Last
-                                            Confirmed: <?php echo !empty($meta_data["locations"][$index]["last_seen"]) ? $meta_data["locations"][$index]["last_seen"] : "-"; ?></p>
-                                        <a class="run-search btn"
-                                           data-query="<?php echo $data ?>" <?php SCF::js_controller("search.form_run_search") ?>>Run
-                                            Search</a>
-                                    </div>
-                                </div>
-                                <?php
-                            }
-                            unset($index, $data);
-                            ?>
-                        </div>
-                        <?php
-                        if ($count > 4) {
-                            ?>
-                            <div class="text-right">
-                                <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                    <i>Show Less</i> <span class="si-up"></span></div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.locations") ?> class="report-box no-results">
-                        <h2><span class="si-location"></span>Addresses</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>Multiple sources verify that there appears to be no address that can be definitively
-                                associated with the person you're looking up.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-
-                // Section: Phone Numbers
-                if (!empty($result["phones"])) {
-                    $count = count($result["phones"]);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.phones") ?>
-                            class="report-box<?php echo(!empty($premium_only_data["phones"]) && count($premium_only_data["phones"]) ? " premium_data_included" : ""); ?>"
-                            data-type="<?php echo SEARCH_TYPE_PHONE; ?>">
-                        <h2><span class="si-phone"></span>Phone Numbers<label><?php echo $count ?></label></h2>
-                        <p class="box-title">Data from various sources, including popular directories, indicate that the
-                            following phone numbers may have belonged or were in some way associated with the person
-                            you're researching. </p>
-                        <div class="row">
-                            <?php
-                            foreach ($result["phones"] as $index => $data) {
-                                $phone_number_data = AreaCode::get_info_for_phone_numbers($result["phones"]);
-                                $carrier = !empty($phone_number_data[$data]["carrier"]) ? $phone_number_data[$data]["carrier"] : "";
-                                ?>
-                                <div class="col-sm-6 col-md-3 data-point">
-                                    <div class="box-col<?php echo isset($premium_only_data["phones"][$index]) ? " premium_data_activated" : ""; ?>">
-                                        <a class="box-name" title="<?php echo $data ?>"><?php echo $data ?></a>
-                                        <p title="<?php echo $carrier; ?>">Carrier: <?php echo $carrier ?: "-" ?></p>
-                                        <p>
-                                            Location: <?php echo !empty($phone_number_data[$data]["city"]) ? "{$phone_number_data[$data]["city"]}, {$phone_number_data[$data]["state"]}" : "-" ?></p>
-                                        <p>Line
-                                            Type: <?php echo !empty($phone_number_data[$data]["line_type"]) ? $phone_number_data[$data]["line_type"] : "-" ?></p>
-                                        <p>First
-                                            Validated: <?php echo !empty($meta_data["phones"][$index]["first_seen"]) ? $meta_data["phones"][$index]["first_seen"] : "-"; ?></p>
-                                        <p>Last
-                                            Confirmed: <?php echo !empty($meta_data["phones"][$index]["last_seen"]) ? $meta_data["phones"][$index]["last_seen"] : "-"; ?></p>
-                                        <a class="run-search btn"
-                                           data-query="<?php echo $data ?>" <?php SCF::js_controller("search.form_run_search") ?>>Run
-                                            Search</a>
-                                    </div>
-                                </div>
-                                <?php
-                            }
-                            unset($index, $data, $phone_number_data, $carrier);
-                            ?>
-                        </div>
-                        <?php
-                        if ($count > 4) {
-                            ?>
-                            <div class="text-right">
-                                <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                    <i>Show Less</i> <span class="si-up"></span></div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.phones") ?> class="report-box no-results">
-                        <h2><span class="si-phone"></span>Phone Numbers</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>Multiple sources report no phone records are directly tied to your search. Note:
-                                Sometimes phone numbers are registered under different names or households and don't
-                                link the person who is using the phone.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-
-                // Section: Emails
-                if (!empty($result["emails"])) {
-                    $count = count($result["emails"]);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.emails") ?>
-                            class="report-box data-breach-box<?php echo(!empty($premium_only_data["emails"]) && count($premium_only_data["emails"]) ? " premium_data_included" : ""); ?>"
-                            data-type="<?php echo SEARCH_TYPE_EMAIL; ?>">
-                        <h2><span class="si-email"></span>Emails<label><?php echo $count ?></label></h2>
-                        <p class="box-title">We searched publicly available data online and found the following email
-                            addresses are strongly linked to the person you're researching.</p>
-                        <div class="uploading-data"><img
-                                    src="<?php echo $current_template_assets_url ?>/images/loader-green.svg"
-                                    alt="Loading..." decoding="async" loading="lazy"/>
-                            <span>Updating Data Breach Report</span></div>
-                        <table class="scf-table">
-                            <thead>
-                            <tr>
-                                <th>Website</th>
-                                <th>Data Breach Info</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr <?php SCF::js_element_var("row") ?>>
-                                <td>
-                                    <img <?php SCF::js_element_var("img") ?>
-                                            src="<?php echo $current_template_assets_url ?>/images/loader-green.svg"
-                                            alt="Adobe"
-                                            style="background-image: url(<?php echo $current_template_assets_url ?>/images/loader-green.svg);"
-                                            decoding="async" loading="lazy"/>
-                                    <a <?php SCF::js_element_var("a") ?>></a>
-                                </td>
-                                <td>
-                                    <p <?php SCF::js_element_var("desc") ?>></p>
-                                    <p><strong>Compromised data:</strong>
-                                        <span <?php SCF::js_element_var("comp") ?>></span></p>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        <?php
-                        foreach ($result["emails"] as $index => $data) {
-                            ?>
-                            <div class="data-report data-point">
-                                <div class="data-head">
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <h4 title="<?php echo $data ?>"><?php echo $data ?></h4>
-                                            <span>First Validated: <?php echo !empty($meta_data["emails"][$index]["first_seen"]) ? $meta_data["emails"][$index]["first_seen"] : "-"; ?></span>
-                                            <span>Last Confirmed: <?php echo !empty($meta_data["emails"][$index]["last_seen"]) ? $meta_data["emails"][$index]["last_seen"] : "-"; ?></span>
-                                            <!--<a class="run-search" data-query="<?php echo $data ?>" <?php SCF::js_controller("search.form_run_search") ?>>Run Search</a>-->
-                                        </div>
-                                        <div class="col-md-4 text-right">
-                                            <h5 <?php SCF::js_element_var("not_found") ?>><span
-                                                        class="si-done-circle"></span> Not found in any Reported Data
-                                                Breach</h5>
-                                            <h5 <?php SCF::js_element_var("reported") ?>>Reported in
-                                                <span <?php SCF::js_element_var("counter") ?>>0</span> Incidents</h5>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="data-section" <?php SCF::js_element_var("data") ?>>
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <p>This email was involved in <span <?php SCF::js_element_var("count") ?>>0 data breach incidents</span>,
-                                                the earliest of which was
-                                                <span <?php SCF::js_element_var("date_first") ?>></span> and the latest
-                                                of which was <span <?php SCF::js_element_var("date_last") ?>></span>.
-                                            </p>
-                                        </div>
-                                        <div class="col-md-4 text-right">
-                                            <div class="view_all_report btn btn-dark-green expand" <?php SCF::js_controller("results.section.emails.view") ?>>
-                                                View List
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        unset($index, $data);
-                        ?>
-                        <?php
-                        if ($count > 4) {
-                            ?>
-                            <div class="text-right">
-                                <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                    <i>Show Less</i> <span class="si-up"></span></div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.emails") ?> class="report-box no-results">
-                        <h2><span class="si-email"></span>Emails</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>Several data providers covering the majority of the Internet confirms that there appears
-                                to be no publicly-viewable email that is associated with the person of interest.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-
-                // Section: Usernames
-                if (!empty($result["usernames"])) {
-                    $count = count($result["usernames"]);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.usernames") ?>
-                            class="report-box<?php echo(!empty($premium_only_data["usernames"]) && count($premium_only_data["usernames"]) ? " premium_data_included" : ""); ?>"
-                            data-type="<?php echo SEARCH_TYPE_USERNAME; ?>">
-                        <h2><span class="si-username"></span>Usernames<label><?php echo $count ?></label></h2>
-                        <p class="box-title">Data gathered from multiple sources indicate that the following username(s)
-                            are connected to the person you're looking up.</p>
-                        <div class="row">
-                            <?php
-                            foreach ($result["usernames"] as $index => $data) {
-                                ?>
-
-                                <div class="col-sm-6 col-md-3 data-point">
-                                    <div class="box-col<?php echo isset($premium_only_data["usernames"][$index]) ? " premium_data_activated" : ""; ?>">
-                                        <a class="box-name" title="<?php echo $data ?>"><?php echo $data ?></a>
-                                        <p>First
-                                            Validated: <?php echo !empty($meta_data["usernames"][$index]["first_seen"]) ? $meta_data["usernames"][$index]["first_seen"] : "-"; ?></p>
-                                        <p>Last
-                                            Confirmed: <?php echo !empty($meta_data["usernames"][$index]["last_seen"]) ? $meta_data["usernames"][$index]["last_seen"] : "-"; ?></p>
-                                        <a class="run-search btn"
-                                           data-query="<?php echo $data ?>" <?php SCF::js_controller("search.form_run_search") ?>>Run
-                                            Search</a>
-                                    </div>
-                                </div>
-                                <?php
-                            }
-                            unset($index, $data);
-                            ?>
-                        </div>
-                        <?php
-                        if ($count > 4) {
-                            ?>
-
-                            <div class="text-right">
-                                <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                    <i>Show Less</i> <span class="si-up"></span></div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.usernames") ?> class="report-box no-results">
-                        <h2><span class="si-username"></span>Usernames</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>We searched current and past Online information sources and didn't find usernames that
-                                can be conclusively associated with the search subject.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-
-                // Section: Websites
-                if (!empty($result["urls"])) {
-                    $domain_list = [];
-                    $direct_url = [];
-                    foreach ($result["urls"] as $index => $data) {
-                        $uri = parse_url($data);
-                        if (!empty($uri["host"])) {
-                            $tmp_domain = preg_replace("/^.*?([^\.]+\.[^\.]+)\$/m", "\\1", $uri["host"]);
-                            $domain_list[] = $tmp_domain;
-                            if (empty($direct_url[$tmp_domain])) {
-                                $direct_url[$tmp_domain] = $data;
-                            }
-                        }
-                    }
-                    $domain_list = array_unique($domain_list);
-                    ?>
-                    <div <?php SCF::js_controller("results.section.urls") ?>
-                            class="report-box social-reports<?php echo(!empty($premium_only_data["urls"]) && count($premium_only_data["urls"]) ? " premium_data_included" : ""); ?>">
-                        <h2><span class="si-website"></span>Websites<label><?php echo count($result["urls"]) ?></label>
-                        </h2>
-                        <p class="box-title">Information from multiple data sources point to the following website(s)
-                            being closely linked to the person you're looking up.</p>
-                        <ul>
-                            <?php
-                            foreach ($domain_list as $domain) {
-                                ?>
-                                <li><a target="_blank" href="<?php echo $direct_url[$domain]; ?>"> <span class="favicon"
-                                                                                                         style="background-image: url('https://www.google.com/s2/favicons?domain=<?php echo $domain ?>')"></span> <?php echo $domain ?>
-                                    </a></li>
-                                <?php
-                            }
-                            ?>
-                        </ul>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <?php
-                                $url_types = [
-                                    "/personal_profiles/i" => "Personal",
-                                    "/professional_and_business/i" => "Business",
-                                    "/background_reports|contact_details|email_address|media|public_records|publications|school_and_classmates|web_pages/i" => "Additional",
-                                ];
-
-                                foreach ($url_types as $_pattern => $_title) {
-                                    $data_set = [];
-                                    foreach ($meta_data["urls"] as $_index => $_data) {
-                                        if (!empty($result["urls"][$_index]) && preg_match($_pattern, $_data["category"])) {
-                                            $data_set[$_index] =& $meta_data["urls"][$_index];
-                                        }
-                                    };
-
-                                    if (empty($data_set)) {
-                                        continue;
-                                    }
-
-                                    $slider_key = "results.slider." . strtolower($_title);
-                                    $count = count($data_set);
-                                    ?>
-                                    <div class="box-col">
-                                        <div class="row">
-                                            <div class="col-xs-7">
-                                                <h4><?php echo $_title ?><span>(<?php echo $count; ?>)</span></h4>
-                                            </div>
-                                            <?php
-                                            if ($count > 2) {
-                                                ?>
-                                                <div class="col-xs-5 box-slide <?php echo ($count < 4) ? " mobile-only" : "" ?>">
-                                                    <span class="si-left-circle" data-direction="-"
-                                                          data-target="<?php echo $slider_key ?>" <?php SCF::js_controller("slider.slide") ?>></span>
-                                                    <span class="si-right-circle" data-direction="+"
-                                                          data-target="<?php echo $slider_key ?>" <?php SCF::js_controller("slider.slide") ?>></span>
-                                                </div>
-                                                <?php
-                                            }
-                                            ?>
-                                        </div>
-                                        <div class="row url-set" <?php SCF::js_controller($slider_key) ?>>
-                                            <?php
-                                            foreach ($data_set as $index => $data) {
-                                                if (empty($result["urls"][$index])) {
-                                                    continue;
-                                                }
-
-                                                $uri = parse_url($result["urls"][$index]);
-                                                $domain = preg_replace("/^.*?([^\.]+\.[^\.]+)\$/m", "\\1", $uri["host"]);
-                                                ?>
-                                                <div class="col-xs-6 col-md-3 data-point">
-                                                    <a href="<?php echo $result["urls"][$index]; ?>" target="_blank"
-                                                       data-target="<?php echo $result["urls"][$index]; ?>" <?php SCF::js_controller("lnt") ?>>
-                                                        <div class="box-col2">
-                                                            <div class="link-title"><span class="favicon"
-                                                                                          style="background-image: url('https://www.google.com/s2/favicons?domain=<?php echo $domain ?>')"></span> <?php echo $domain; ?>
-                                                            </div>
-                                                            <p><?php echo !empty($result["url_previews"][$index]["content"]) ? $result["url_previews"][$index]["content"] : (!empty($result["url_previews"][$index]["url_title"]) ? $result["url_previews"][$index]["url_title"] : "URL preview not available"); ?></p>
-                                                        </div>
-                                                    </a>
-                                                </div>
-                                                <?php
-                                            }
-                                            ?>
-                                        </div>
-                                    </div>
-                                    <?php
-                                }
-                                unset($_data, $data_set, $_pattern, $_title, $url_types);
-                                ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php
-                } else {
-                    ?>
-                    <div <?php SCF::js_controller("results.section.urls") ?> class="report-box no-results">
-                        <h2><span class="si-website"></span>Websites</h2>
-                        <div class="scf_empty_report">
-                            <img src="<?php echo $current_template_assets_url; ?>/images/no_results_head.svg"
-                                 alt="No Data" decoding="async" loading="lazy"/>
-                            <p>The person you're looking up is not clearly linked with any publicly accessible website,
-                                according to various data sources.</p>
-                        </div>
-                    </div>
-                    <?php
-                }
-                //end of if(!$pwnd_and_IPQ_only){
-            } else {
-                ?>
-                <div class="report-box no-results" style="background-color:#f8f8f8;border:0">
-                    <div class="scf_empty_report">
-                        <img src="<?php echo $current_template_assets_url; ?>/images/report-empty.svg" width="56"
-                             alt="No Data" decoding="async" loading="lazy"/>
-                        <p>We did a thorough search of databases but, unfortunately, didn't find information in the
-                            following categories. Don't give up! Keep Searching with our other seaching tools.</p>
-                    </div>
-
-
-                </div>
-                <p>&nbsp;</p>
-                <div class="report-box no-results regapi">
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-image"></i> Photos</button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-user"></i> Relationships</button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-location"></i> Associated Locations
-                    </button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-website"></i> Websites</button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-phone"></i> Phone Numbers</button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-email"></i> Emails</button>
-                    <button type="button" class="btn btn-bordered-gray"><i class="si-username"></i> Usernames</button>
-                </div>
-                <?php
+            $user_data = User::get_by_id( $_SESSION["mobile_app_user"] );
+            if( ! empty( $user_data ) && ! empty( $user_data["id"] ) ){
+                $user_id = $user_data["id"];
+                $mobile_app = true;
             }
 
-            // Section: Jobs
-            if (!empty($result["jobs_in_detail"])) {
-                $count = count($result["jobs_in_detail"]);
-                ?>
-                <div <?php SCF::js_controller("results.section.jobs") ?>
-                        class="report-box<?php echo(!empty($premium_only_data["jobs_in_detail"]) && count($premium_only_data["jobs_in_detail"]) ? " premium_data_included" : ""); ?>">
-                    <h2><span class="si-username"></span>Jobs<label><?php echo $count ?></label></h2>
-                    <p class="box-title">We found employment related information from additional premium data sources
-                        which possibly shows the job history of the subject of your search.</p>
-                    <div class="row">
-                        <?php
-                        foreach ($result["jobs_in_detail"] as $index => $data) {
-                            ?>
+        }
 
-                            <div class="col-sm-6 col-md-3 data-point">
-                                <div class="box-col<?php echo isset($premium_only_data["jobs_in_detail"][$index]) ? " premium_data_activated" : ""; ?>">
-                                    <a class="box-name"
-                                       title="<?php echo !empty($data["title"]) ? $data["title"] : "N/A"; ?>"><?php echo !empty($data["title"]) ? $data["title"] : "N/A"; ?></a>
-                                    <p>Industry: <?php echo !empty($data["industry"]) ? $data["industry"] : "-" ?></p>
-                                    <p>
-                                        Organization: <?php echo !empty($data["organization"]) ? $data["organization"] : "-" ?></p>
-                                    <p>Start
-                                        Date: <?php echo !empty($data["date_range"]["start"]) ? $data["date_range"]["start"] : "-" ?></p>
-                                    <p>End
-                                        Date: <?php echo !empty($data["date_range"]["end"]) ? $data["date_range"]["end"] : "-" ?></p>
-                                    <p>First
-                                        Validated: <?php echo !empty($meta_data["jobs"][$index]["first_seen"]) ? $meta_data["jobs"][$index]["first_seen"] : "-"; ?></p>
-                                    <p>Last
-                                        Confirmed: <?php echo !empty($meta_data["jobs"][$index]["last_seen"]) ? $meta_data["jobs"][$index]["last_seen"] : "-"; ?></p>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        unset($index, $data);
-                        ?>
-                    </div>
-                    <?php
-                    if ($count > 4) {
-                        ?>
+        $membership = $token_session_data["membership"];
+        $_SESSION["membership_type"] =  $membership["id"];
+        $membership_info = Membership::parse_data( $membership, "per" );
 
-                        <div class="text-right">
-                            <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                <i>Show Less</i> <span class="si-up"></span></div>
-                        </div>
-                        <?php
-                    }
-                    ?>
-                </div>
-                <?php
+        // Check whether this membership can be purchased only if another plan is already purchased.
+        if ( ! empty( $membership["depends_on_membership"] ) ) {
+
+            $membership["depends_on_membership"] = explode( ",", $membership["depends_on_membership"] );
+            $all_user_plans = array_merge( $user_data["active_plans"], $user_data["deactived_plans"] );
+
+            if ( ! array_intersect( $membership["depends_on_membership"], $all_user_plans ) ) {
+
+                unset( $_SESSION["tokens"][ $token ] );
+                SYSTEM::redirect( PAGE_URL_MEMBERSHIP_LEVELS );
+
             }
 
-            // Section: Education
-            if (!empty($result["education_in_detail"])) {
-                $count = count($result["education_in_detail"]);
-                ?>
-                <div <?php SCF::js_controller("results.section.educations") ?>
-                        class="report-box<?php echo(!empty($premium_only_data["education_in_detail"]) && count($premium_only_data["jobs_in_detail"]) ? " premium_data_included" : ""); ?>">
-                    <h2><span class="si-username"></span>Education<label><?php echo $count ?></label></h2>
-                    <p class="box-title">We gathered education related information from one of our premier data
-                        providers that may show where your search subject might have been enrolled.</p>
-                    <div class="row">
-                        <?php
-                        foreach ($result["education_in_detail"] as $index => $data) {
-                            ?>
+        }
 
-                            <div class="col-sm-6 col-md-3 data-point">
-                                <div class="box-col<?php echo isset($premium_only_data["jobs_in_detail"][$index]) ? " premium_data_activated" : ""; ?>">
-                                    <a class="box-name"
-                                       title="<?php echo $data["degree"] ?>"><?php echo(!empty($data["degree"]) ? $data["degree"] : "N/A"); ?></a>
-                                    <p>School: <?php echo !empty($data["school"]) ? $data["school"] : "-" ?></p>
-                                    <p>Start
-                                        Date: <?php echo !empty($data["date_range"]["start"]) ? $data["date_range"]["start"] : "-" ?></p>
-                                    <p>End
-                                        Date: <?php echo !empty($data["date_range"]["end"]) ? $data["date_range"]["end"] : "-" ?></p>
-                                    <p>First
-                                        Validated: <?php echo !empty($meta_data["education"][$index]["first_seen"]) ? $meta_data["education"][$index]["first_seen"] : "-"; ?></p>
-                                    <p>Last
-                                        Confirmed: <?php echo !empty($meta_data["education"][$index]["last_seen"]) ? $meta_data["education"][$index]["last_seen"] : "-"; ?></p>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        unset($index, $data);
-                        ?>
-                    </div>
-                    <?php
-                    if ($count > 4) {
-                        ?>
+        // If already signed in for the plan and if the plan is marked as "avoid_duplicate_signups", redirect to membership levels page
+        if ( ! empty( $membership["avoid_duplicate_signups"] ) && $user_id && in_array( $membership["id"], $user_data["active_plans"] ) ) {
 
-                        <div class="text-right">
-                            <div class="view_all_report btn btn-gray" <?php SCF::js_controller("results.view_all") ?>>
-                                <i>Show Less</i> <span class="si-up"></span></div>
-                        </div>
-                        <?php
-                    }
-                    ?>
-                </div>
-                <?php
+            unset( $_SESSION["tokens"][ $token ] );
+            SYSTEM::redirect( PAGE_URL_MEMBERSHIP_LEVELS );
+
+        }
+
+        // Assign combine monlthy membership plans
+        $monthly_membership_plans_combine = array( PLAN_UNLIMITED_MONTHLY_1, PLAN_UNLIMITED_MONTHLY_3, PLAN_UNLIMITED_MONTHLY_6 );
+        if( isset( $post_data["plan_id"] ) && in_array( $post_data["plan_id"], $monthly_membership_plans_combine ) ){
+            $membership = Membership::get( $post_data["plan_id"] );
+            $token_session_data["membership_id"] = $post_data["plan_id"];
+            $token_session_data["membership"] = $membership;
+        }
+
+        // Multi-membership Plan Selection
+        $multiple_membership_options = ! empty( $token_session_data["membership_options"] ) && is_array( $token_session_data["membership_options"] );
+
+        // Accepted Payment Gateways
+        $pg_enabled = [ "paypal" => true, "payflowpro" => true, "braintree" => true, "amazon_pay" => true, "nmi" => true, "usaepay" => true ];
+        $payment_gateway_default = PAYMENT_GATEWAY_DEFAULT;
+
+        if ( ! empty( $membership["allowed_payment_gateways"] ) ) {
+
+            $pg_enabled = array_fill_keys( array_keys( $pg_enabled ), false );
+            foreach ( $membership["allowed_payment_gateways"] as $_pg ) $pg_enabled[$_pg]= true;
+            unset( $_pg );
+
+            if ( $pg_enabled["braintree"] && $payment_gateway_default != "braintree" ) {
+
+                $payment_gateway_default = "braintree";
+
+            } elseif ( $pg_enabled["payflowpro"] && $payment_gateway_default != "payflowpro" ) {
+
+                $payment_gateway_default = "payflowpro";
+
             }
 
-            ?>
-            <?php if (!empty($premium_content_user)) { ?>
-                <?php if (!empty($result["bankruptcy"]) || !empty($result["judgment"]) || !empty($result["lien"]) || !empty($result["professional"])) { ?>
-                    <div class="disclaimer-note">
-                        <p><span class="si-info"></span> Disclaimer: We searched publicly available data online and
-                            found the following information are strongly linked to the person you're researching.</p>
-                    </div>
-                <?php } ?>
-                <?php if (!empty($result["bankruptcy"])) { ?>
-                    <div <?php SCF::js_controller("results.section.bankruptcy") ?> class="report-box">
-                        <h2><span class="si-cooperation"></span>Bankruptcies
-                            <label><?php echo count($result["bankruptcy"]); ?></label> <span class="premium_label">Premium Data</span>
-                        </h2>
-                        <?php foreach ($result["bankruptcy"] as $index => $data) { ?>
-                            <div class="report-list-sub">
-                                <div class="list-head">
-                                    <div class="row">
-                                        <div class="col-md-9">
-                                            <div class="list-title">Case Number:
-                                                <span><?php echo $data["fullCaseNumber"]; ?></span></div>
-                                            <p><?php echo $data["court"]["name"]; ?></p>
-                                            <p><?php echo $data["caseStatus"]; ?></p>
-                                        </div>
-                                        <div class="col-md-3 text-right">
-                                            <a class="btn btn-dark-green show-btn xxx" <?php SCF::js_controller("results.idi_view_more") ?>><span>View Details</span>
-                                                <i class="si-down-circle"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Full Case Number</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["fullCaseNumber"]; ?></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Chapter</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["chapter"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Case Status</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["caseStatus"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Case Status Date</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["caseStatusDate"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Filing Date</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["filingDate"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Last Date To File Poc</strong></p>
-                                        </div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["lastDateToFilePoc"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Judge Initials</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["judgeInitials"]; ?></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Judge Name</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["judgeName"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Meeting Address</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["meeting"]["address"]["complete"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Meeting Date</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["meeting"]["date"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Asset Indicator</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["assetIndicator"]; ?></p>
-                                        </div>
-                                    </div>
+        }
 
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>screen</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["screen"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Converted</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["converted"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Converted Date</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["convertedDate"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Date Collected</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>
-                                                : <?php echo $data["dateCollected"]["data"]; ?></p></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Transaction Id</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["transactionId"]; ?></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Voluntary Flag</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["voluntaryFlag"]; ?></p>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-3 col-xs-6"><p><strong>Pro Se Indicator</strong></p></div>
-                                        <div class="col-md-3 col-xs-6"><p>: <?php echo $data["proSeIndicator"]; ?></p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <h4>Attorney Information:</h4>
-                                    <p><?php echo $data["attorney"]["lawFirm"] . "<br />" . $data["attorney"]["address"]["complete"] . "<br />" . $data["attorney"]["address"]["city"] . " " . $data["attorney"]["address"]["state"] . " " . $data["attorney"]["address"]["zip"] . " " . $data["attorney"]["address"]["zip4"] . "<br />" . $data["attorney"]["phone"]; ?></p>
-                                </div>
-                                <div class="list-content">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <h4>Debtor:</h4>
-                                            <p><?php echo $data["debtor1"]["name"][0]["data"] . "<br />" . $data["debtor1"]["address"]["complete"] . "<br />" . $data["debtor1"]["address"]["city"] . " " . $data["debtor1"]["address"]["state"] . " " . $data["debtor1"]["address"]["zip"] . " " . $data["debtor1"]["address"]["zip4"]; ?></p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <h4>Codebtor:</h4>
-                                            <p><?php echo $data["debtor2"]["name"][0]["data"] . "<br />" . $data["debtor2"]["address"]["complete"] . "<br />" . $data["debtor2"]["address"]["city"] . " " . $data["debtor2"]["address"]["state"] . " " . $data["debtor2"]["address"]["zip"] . " " . $data["debtor2"]["address"]["zip4"]; ?></p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <h4>Trustee:</h4>
-                                    <p><?php echo $data["trustee"]["name"]["data"] . "<br />" . $data["trustee"]["address"]["complete"] . "<br />" . $data["trustee"]["address"]["city"] . " " . $data["trustee"]["address"]["state"] . " " . $data["trustee"]["address"]["zip"] . " " . $data["trustee"]["address"]["zip4"] . "<br />" . $data["trustee"]["phone"]; ?></p>
-                                </div>
-                            </div>
-                        <?php }
-                        unset($index, $data); ?>
-                    </div>
-                <?php } ?>
-                <?php if (!empty($result["lien"])) { ?>
-                    <div <?php SCF::js_controller("results.section.lien") ?> class="report-box">
-                        <h2><span class="si-property"></span>Liens
-                            <label><?php echo count($result["lien"]); ?></label><span
-                                    class="premium_label">Premium Data</span></h2>
-                        <?php foreach ($result["lien"] as $index => $data) { ?>
-                            <div class="report-list-sub">
-                                <div class="list-head">
-                                    <div class="row">
-                                        <div class="col-md-9">
-                                            <div class="list-title">Debtor:
-                                                <span><?php echo $data["debtor"][0]["name"][0]["first"] . " " . $data["debtor"][0]["name"][0]["middle"] . " " . $data["debtor"][0]["name"][0]["last"]; ?></span>
-                                            </div>
-                                            <p><?php echo $data["debtor"][0]["address"][0]["complete"] . ", " . $data["debtor"][0]["address"][0]["city"] . " " . $data["debtor"][0]["address"][0]["state"] . " " . $data["debtor"][0]["address"][0]["zip"] . ", " . $data["debtor"][0]["address"][0]["zip4"]; ?></p>
-                                            <p><strong>Lien Amount:
-                                                    <span><?php echo round($data["info"][0]["amount"], 2); ?></span></strong>
-                                            </p>
-                                        </div>
-                                        <div class="col-md-3 text-right">
-                                            <a class="btn btn-dark-green show-btn" <?php SCF::js_controller("results.idi_view_more") ?>><span>View Details</span>
-                                                <i class="si-down-circle"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="row">
-                                                <div class="col-xs-6 col-md-3"><p><strong>Case Description</strong></p>
-                                                </div>
-                                                <div class="col-xs-6 col-md-9"><p>
-                                                        : <?php echo $data["record"][0]["caseDescription"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Fips Code</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["fipsCode"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Case County</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["caseCounty"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Fcase State</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["caseState"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Amount</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["info"][0]["amount"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Deed Category</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["deedCategory"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Document Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentLocation"]["docNumber"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Original Document Number</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["originalDocumentLocation"]["docNumber"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Recording Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["recordingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["date"]["data"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Damar Type</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["damarType"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Original Recording Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["origRecordingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Tax Period Max</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["taxPeriodMax"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Tax Period Min</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["taxPeriodMin"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Refile Extend Last Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["refileExtendLastDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Abstract Issue Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["abstractIssueDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Stay Ordered Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["stayOrderedDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Document Filing Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentFilingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Original Document Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["origDocumentDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Court Case Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["courtCaseNumber"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Tax Certification Number</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["taxCertificationNumber"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Lien Type</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["lienType"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Creditor</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["creditor"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Issuing Agency</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["issuingAgency"][0]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Property</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["property"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Business</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["business"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php }
-                        unset($index, $data); ?>
-                    </div>
-                <?php } ?>
-                <?php if (!empty($result["judgment"])) { ?>
-                    <div <?php SCF::js_controller("results.section.judgment") ?> class="report-box">
-                        <h2><span class="si-criminal-rec"></span>Judgments
-                            <label><?php echo count($result["judgment"]); ?></label><span class="premium_label">Premium Data</span>
-                        </h2>
-                        <?php foreach ($result["judgment"] as $index => $data) { ?>
-                            <div class="report-list-sub">
-                                <div class="list-head">
-                                    <div class="row">
-                                        <div class="col-md-9">
-                                            <div class="list-title">Defendant:
-                                                <span><?php echo $data["defendant"][0]["name"][0]["first"] . " " . $data["defendant"][0]["name"][0]["middle"] . " " . $data["defendant"][0]["name"][0]["last"]; ?></span>
-                                            </div>
-                                            <p><?php echo $data["defendant"][0]["address"][0]["complete"] . ", " . $data["defendant"][0]["address"][0]["city"] . " " . $data["defendant"][0]["address"][0]["state"] . " " . $data["defendant"][0]["address"][0]["zip"] . ", " . $data["defendant"][0]["address"][0]["zip4"]; ?></p>
-                                            <p><strong>Lien Amount:
-                                                    <span><?php echo round($data["info"][0]["amount"], 2); ?></span></strong>
-                                            </p>
-                                        </div>
-                                        <div class="col-md-3 text-right">
-                                            <a class="btn btn-dark-green show-btn" <?php SCF::js_controller("results.idi_view_more") ?>><span>View Details</span>
-                                                <i class="si-down-circle"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="row">
-                                                <div class="col-xs-6 col-md-3"><p><strong>Case Description</strong></p>
-                                                </div>
-                                                <div class="col-xs-6 col-md-9"><p>
-                                                        : <?php echo $data["record"][0]["caseDescription"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Fips Code</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["fipsCode"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Case State</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["caseState"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Amount</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["info"][0]["amount"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>InterestRate</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["interestRate"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Creditor</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"][0]["creditor"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Deed Category</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["deedCategory"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Book Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentLocation"]["bookNumber"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Page Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentLocation"]["pageNumber"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Document Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentLocation"]["docNumber"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Recording Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["recordingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["date"]["data"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Damar Type</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["damarType"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Original Recording Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["origRecordingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Tax Period Max</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["taxPeriodMax"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Tax Period Min</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["taxPeriodMin"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Refile Extend Last Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["refileExtendLastDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Abstract Issue Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["abstractIssueDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Stay Ordered Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["stayOrderedDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Document Filing Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["documentFilingDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>original Document Date</strong></p>
-                                                </div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["record"][0]["origDocumentDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Court Case Number</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["courtCaseNumber"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Attorney</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["attorney"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Creditor</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["creditor"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Business</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["business"][0]; ?></p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php }
-                        unset($index, $data); ?>
-                    </div>
-                <?php } ?>
-                <?php if ($idi_show_criminal && !empty($result["criminal"])) { ?>
-                    <div <?php SCF::js_controller("results.section.criminal") ?> class="report-box">
-                        <h2><span class="si-criminal-rec"></span>Possible Criminal / Infractions
-                            <label><?php echo count($result["criminal"]); ?></label><span class="premium_label">Premium Data</span>
-                        </h2>
-                        <?php foreach ($result["criminal"] as $index => $data) { ?>
-                            <div class="report-list-sub">
-                                <div class="list-head">
-                                    <div class="row">
-                                        <div class="col-md-9">
-                                            <div class="list-title">Name:
-                                                <span><?php echo $data["name"][0]["data"]; ?></span> &nbsp;&nbsp;&nbsp;
-                                                Case Number:
-                                                <span><?php echo $data["offense"][0]["caseNumber"]; ?></span></div>
-                                            <p>Source: <?php echo $data["offense"][0]["sourceName"]; ?></p>
-                                            <p>Charges
-                                                Filed: <?php echo $data["offense"][0]["chargesFiledDate"]["data"]; ?></p>
-                                        </div>
-                                        <div class="col-md-3 text-right">
-                                            <a class="btn btn-dark-green show-btn" <?php SCF::js_controller("results.idi_view_more") ?>><span>View Details</span>
-                                                <i class="si-down-circle"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <h4>Personal Information:</h4>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Full Name</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["name"][0]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Aka Flag</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["name"][0]["akaFlag"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>DOB</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["dob"][0]["date"]["data"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Age</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["age"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Hair Color</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["hairColor"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Eye Color</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["eyeColor"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Height</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["height"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Weight</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["weight"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Race</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["race"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Sex</strong></p></div>
-                                                <div class="col-xs-6"><p>: <?php echo $data["sex"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php foreach ($data["offense"] as $criminal_offense_index => $criminal_offense) { ?>
-                                    <div class="list-content">
-                                        <h4>Offense: <?php echo $criminal_offense_index + 1; ?></h4>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="row">
-                                                    <div class="col-xs-6 col-md-3"><p><strong>Description</strong></p>
-                                                    </div>
-                                                    <div class="col-xs-6 col-md-9"><p>
-                                                            : <?php echo $criminal_offense["description"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Case Number</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["caseNumber"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Category</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["category"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Source State</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["sourceState"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Source Name</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["sourceName"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Charges Filed Date</strong></p>
-                                                    </div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["chargesFiledDate"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Conviction</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["conviction"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Warrant</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["warrant"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Supervision</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["supervision"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Commitment</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["commitment"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Disposition</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["disposition"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Arrest</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["arrest"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Court</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["court"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>County Or Jurisdiction</strong></p>
-                                                    </div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["countyOrJurisdiction"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Release Date</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_offense["releaseDate"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php } ?>
-                                <?php foreach ($data["crime"] as $criminal_crime_index => $criminal_crime) { ?>
-                                    <div class="list-content">
-                                        <h4>Crime: <?php echo $criminal_crime_index + 1; ?></h4>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="row">
-                                                    <div class="col-xs-6 col-md-3"><p><strong>Offense
-                                                                description</strong></p></div>
-                                                    <div class="col-xs-6 col-md-9"><p>
-                                                            : <?php echo $criminal_crime["offense"]["description"][0]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <div class="row">
-                                                    <div class="col-xs-6 col-md-3"><p><strong>Comments</strong></p>
-                                                    </div>
-                                                    <div class="col-xs-6 col-md-9"><p>
-                                                            : <?php echo $criminal_crime["comments"][0]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Case Number</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["caseNumber"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Source Name</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["sourceName"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Source State</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["sourceState"]; ?></p></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Offense category</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["offense"]["category"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Offense Date</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["offense"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Arresting Agency</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["arrest"]["arrestingAgency"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Arrest warrant</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["arrest"]["warrant"]["date"]["data"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Case Type</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["courtCase"]["caseType"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>Court</strong></p></div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["courtCase"]["court"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="row">
-                                                    <div class="col-xs-6"><p><strong>County Or Jurisdiction</strong></p>
-                                                    </div>
-                                                    <div class="col-xs-6"><p>
-                                                            : <?php echo $criminal_crime["courtCase"]["countyOrJurisdiction"]; ?></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php } ?>
-                                <!-- <div class="list-content">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="row">
-                                <div class="col-md-6"><p><strong>Comments</strong></p></div>
-                                <div class="col-md-6"><p>: Citation Number 200728</p></div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="row">
-                                <div class="col-md-6"><p><strong>Status</strong></p></div>
-                                <div class="col-md-6"><p>: Disposed</p></div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-                            </div>
-                        <?php }
-                        unset($index, $data); ?>
-                    </div>
-                <?php } ?>
-                <?php
-                if (!empty($result["professional"])) { ?>
-                    <div <?php SCF::js_controller("results.section.professional") ?> class="report-box">
-                        <h2><span class="si-account"></span>Professional Licenses
-                            <label><?php echo count($result["professional"]); ?></label><span class="premium_label">Premium Data</span>
-                        </h2>
-                        <?php foreach ($result["professional"] as $index => $data) { ?>
-                            <div class="report-list-sub">
-                                <div class="list-head">
-                                    <div class="row">
-                                        <div class="col-md-9">
-                                            <div class="list-title">License Description:
-                                                <span><?php echo $data["info"]["license"]["desc"]; ?></span></div>
-                                            <p>License Number: <?php echo $data["info"]["license"]["number"]; ?></p>
-                                            <p>License Status: <?php echo $data["info"]["status"]; ?></p>
-                                        </div>
-                                        <div class="col-md-3 text-right">
-                                            <a class="btn btn-dark-green show-btn" <?php SCF::js_controller("results.idi_view_more") ?>><span>View Details</span>
-                                                <i class="si-down-circle"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="list-content">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>License state</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["license"]["state"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>License Board</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["license"]["board"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Record Type</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["recordType"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Record Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["recordDate"]["data"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Original Issue Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["originalIssueDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Registered Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["registeredDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Expiration Date</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["info"]["expirationDate"]["data"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="row">
-                                                <div class="col-xs-6"><p><strong>Person Name</strong></p></div>
-                                                <div class="col-xs-6"><p>
-                                                        : <?php echo $data["person"][0]["name"][0]["first"] . " " . $data["person"][0]["name"][0]["middle"] . " " . $data["person"][0]["name"][0]["last"]; ?></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <div class="row">
-                                                <div class="col-xs-3"><p><strong>Address</strong></p></div>
-                                                <div class="col-xs-9"><p>
-                                                        : <?php echo $data["address"][0]["data"]; ?></p></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php }
-                        unset($index, $data); ?>
-                    </div>
-                <?php } ?>
-            <?php } ?>
+        // Payment Gateway Params
+        $payflow_transparent_redirect_mod = ( "payflowpro" == $payment_gateway_default && PAYFLOW_TRANSPARENT_REDIRECT );
+        $braintree_payment = $include_braintree_scripts = ( "braintree" == $payment_gateway_default );
+        $usaepay_payment = $include_usaepay_scripts = ( "usaepay" == $payment_gateway_default );
+        $avoid_posting_cc_data = ( $payflow_transparent_redirect_mod || $braintree_payment || ! empty( $nmi_payment ) || $usaepay_payment );
 
-            <?php
-            if (empty($premium_content_user) && !empty($result['premium_data'])) {
-                if (!isset($_SESSION["step_zero_premium_scroll"]) && !isset($_SESSION["ab_premium_scroll"])) {
-                    $_SESSION["ab_premium_scroll"] = $abtester->get_experiment("ab_premium_scroll", session_id(), SYSTEM::bot_detected() ? "standard" : "");
-                    $_SESSION["step_zero_premium_scroll"] = true;
+		// Paypal Transparent Redirect Token
+		if ( $payflow_transparent_redirect_mod ) {
 
-                    if (SYSTEM::get_device_type() == "mobile") {
-                        $_SESSION["ab_premium_scroll"]->track_event("0_landing_premium_mobile", SYSTEM::get_device_type());
-                    } elseif (SYSTEM::get_device_type() == "tablet") {
-                        $_SESSION["ab_premium_scroll"]->track_event("0_landing_premium_tablet", SYSTEM::get_device_type());
-                    } else {
-                        $_SESSION["ab_premium_scroll"]->track_event("0_landing_premium_desktop", SYSTEM::get_device_type());
-                    }
-                }
+            $pftr_amount = ( defined( "PAYFLOW_TRANSPARENT_REDIRECT_ZERO_VERIFICATION" ) && PAYFLOW_TRANSPARENT_REDIRECT_ZERO_VERIFICATION ) ? 0 : $membership["initial_amount"];
+            $token_session_data["pf_token_data"] = $payflowpro->get_secure_token( [ "amount" => $pftr_amount, "error_url" => BASE_URL . "membership-levels/?token={$token}&cmd=pftr&utm_nooverride=1&error=1",  "cancel_url" => BASE_URL . "membership-levels/?token={$token}&cmd=pftr&utm_nooverride=1&cancel=1", "return_url" => BASE_URL . "membership-levels/?token={$token}&cmd=pftr&utm_nooverride=1&success=1" ] );
 
-                $section_list = [
-                    "images" => "Photos",
-                    "relationships" => "Relationships",
-                    "locations" => "Addresses",
-                    "phones" => "Phone Numbers",
-                    "emails" => "Emails",
-                    "usernames" => "Usernames",
-                    "jobs" => "Jobs",
-                    "jobs_in_detail" => "Jobs",
-                    "education" => "Education",
-                    "education_in_detail" => "Education",
-                    "bankruptcy" => "Bankruptcy",
-                    "lien" => "Liens",
-                    "judgment" => "Judgments",
-                    "criminal" => "Possible Criminal / Infractions",
-                    "professional" => "Professional Licenses",
-                    "property" => "Propety Owner",
+        }
+
+        // USAePay
+        if ( $usaepay_payment && $avoid_posting_cc_data ) {
+
+            $usaepay_pg = \PaymentGateway\Common::getPaymentGatewayInstance( $payment_gateway_default );
+            $usaepay_umhash = $usaepay_pg->generateUMhash( "cc:authonly", $membership["initial_amount"] );
+
+        }
+
+		// Braintree
+		if ( $braintree_payment && empty( $token_session_data["bt_client_token"] ) ) $token_session_data["bt_client_token"] = $braintree->get_client_token();
+
+
+        //CSI-6653 - special approval for a user to create black friday plan after offer ends
+        //Must remove this if after the user completed his purchase
+        if( ! empty( $user_data["email"] ) && ! in_array( $user_data["email"], ["jhaney@ualberta.ca", "asdasd@appearen.com", "asitha@socialcatfish.com"])){
+            //Black Friday offer is over
+            if( ! empty( $token_session_data["section"] ) && $token_session_data["section"] == "black-friday-2020" ) SYSTEM::redirect( PAGE_URL_DASHBOARD );
+        }
+
+        
+        if ( $user_id ) {
+
+            //CSI-6653 - special approval for a user to create black friday plan after offer ends
+            //Must remove this if after the user completed his purchase
+            if( ! empty( $user_data["email"] ) && ! in_array( $user_data["email"], ["jhaney@ualberta.ca", "asdasd@appearen.com", "asitha@socialcatfish.com"])){
+                //Already registered users cannot purchase this offer
+                if( ! empty( $token_session_data["section"] ) && $token_session_data["section"] == "black-friday-2020" ) SYSTEM::redirect( PAGE_URL_DASHBOARD );
+            }
+
+		    // Braintree
+		    if ( $braintree_payment && ! isset( $token_session_data["bt_user_data"] ) ) {
+
+                $bt_user_data = $braintree->find_customer( $user_data["email"] );
+                $token_session_data["bt_user_data"] = [
+                    "id" => $bt_user_data->id,
+                    "cards" => array_map( function( $obj ) {
+
+                        return json_decode( json_encode( $obj ), true );
+
+                    }, is_array( $bt_user_data->creditCards ) ? $bt_user_data->creditCards : [] ),
                 ];
 
-                $total_counts = 0;
-                foreach ($result['premium_data'] as $key => $count) {
-                    $total_counts += $count;
-                }
-                ?>
-                <div class="report-box rp-access-premium idi_premium_found">
-                    <img src="<?php echo $current_template_assets_url; ?>/images/premium_found.svg"
-                         alt="Premium Found"/>
-                    <h4>Found More Data on <a><?php echo $query_text; ?></a>.
-                        <span><?php echo $total_counts . " +"; ?></span></h4>
-                    <p>We just checked premium sources and found the following additional information.</p>
-                    <ul>
-                        <?php
-                        foreach ($result['premium_data'] as $key => $count) {
-                            ?>
-                            <li><span class="si-lock-fill"></span> <?php echo "{$section_list[$key]}" ?></li>
-                            <?php
-                        }
-                        ?>
-                    </ul>
-                    <div class="btn btn-dark-green"
-                         data-target="premium_data_found" <?php SCF::js_controller("modal.onclick_show"); ?>>UNLOCK
-                        PREMIUM
-                    </div>
-                </div>
-                <?php
+
+            }
+		    if ( ! empty( $token_session_data["bt_user_data"]["cards"] ) ) {
+
+		    	$card_identifiers = [];
+
+			    foreach ( $token_session_data["bt_user_data"]["cards"] as $bt_card ) {
+
+				    if ( ! $bt_card["expired"] && empty( $card_identifiers[ $bt_card["uniqueNumberIdentifier"] ] ) ) {
+
+					    $user_credit_cards[] = [
+						    "caption" => "{$bt_card["maskedNumber"]} ({$bt_card["cardType"]})",
+						    "token" => $bt_card["token"],
+                            "cardtype" => $bt_card["cardType"]
+					    ];
+
+					    $card_identifiers[ $bt_card["uniqueNumberIdentifier"] ] = 1;
+
+				    }
+
+			    }
+			    unset( $bt_card );
+
+		    }
+
+            $registered_user_allowed_memberships = [ 'ris' , 'upgrade' , 'premium_data', 'premium_data_monthly' , 'avoid-cancel-regular' , 'avoid-cancel-ris' , 'avoid-cancel-regular-ris' ];
+
+            $append_data = [
+                "email" => $user_data["email"],
+                "billing_firstname" => $user_data["first_name"],
+                "billing_lastname" => $user_data["last_name"],
+                "billing_phone" => ! empty( $token_session_data["billing_phone"] ) ? $token_session_data["billing_phone"] : $user_data["phone_number"],
+                "password" => "password",
+            ];
+            $post_data = array_merge( $post_data, $append_data );
+
+
+        } else {
+            if (!isset($_SESSION["regular_premium_combine"])) {
+                if ( ! preg_match( "/^ris|initial|hidden|black-friday-2020|promo\$/im", $membership["type"] ) ) SYSTEM::redirect( RELATIVE_URL . "membership-levels/" );
             }
 
-            // *** Image Search ***
-        } elseif (!empty($image)) {
-            include("ris_report.php");
-        } elseif (!empty($search_data["ras_records"])) {
+        }
 
-            /** Reverse Address Search **/
+        // Form Validation
+        $form_validation = [
+            [
+                "name" => "billing_firstname",
+                "value" => $post_data["billing_firstname"],
+                "caption" => "First Name",
+                "validation" => "required|max_length[100]",
+            ],
+            [
+                "name" => "billing_lastname",
+                "value" => $post_data["billing_lastname"],
+                "caption" => "Last Name",
+                "validation" => "required|max_length[100]",
+            ],
+            [
+                "name" => "email",
+                "value" => $post_data["email"],
+                "caption" => "E-Mail",
+                "validation" => "required|email|max_length[100]",
+            ],
+            [
+                "name" => "password",
+                "value" => $post_data["password"],
+                "caption" => "Password",
+                "validation" => "required|max_length[100]",
+            ],
+        ];
 
-            $property_info = new ObjectProxy($search_data["ras_records"]["property_info"]);
-            $radius_info = new ObjectProxy($search_data["ras_records"]["radius_info"]);
-            $deed_info = &$search_data["ras_records"]["deed_info"];
+        if ( ! empty( $token_session_data["confirm_password"] ) ) {
 
-            $tax_info_data = unserialize($property_info['tax_other_info']) ?: [];
-            $tax_info = new ObjectProxy($tax_info_data);
+            $form_validation[] = [
+                "name" => "confirm_password",
+                "value" => $input_post->confirm_password,
+                "caption" => "Confirm Password",
+                "validation" => "max_length[100]|match[password]",
+            ];
 
-            $legal_info_data = unserialize($property_info["legal"]) ?: [];
-            $legal_info = new ObjectProxy($legal_info_data);
+        }
 
-            $int_room_info_data = unserialize($property_info["int_room_info"]) ?: [];
-            $int_room_info = new ObjectProxy($int_room_info_data);
+        if ( $membership["initial_amount"] > 0 ) {
 
-            $ext_building_info_data = unserialize($property_info["ext_building_info"]) ?: [];
-            $ext_building_info = new ObjectProxy($ext_building_info_data);
+            $form_validation = array_merge( $form_validation, [
+                [
+                    "name" => "billing_address1",
+                    "value" => $post_data["billing_address1"],
+                    "caption" => "Billing Address",
+                    "validation" => "required|max_length[100]",
+                ],
+                [
+                    "name" => "billing_address2",
+                    "value" => $post_data["billing_address2"],
+                    "caption" => "Billing Address 2",
+                    "validation" => "max_length[100]",
+                ],
+                [
+                    "name" => "billing_city",
+                    "value" => $post_data["billing_city"],
+                    "caption" => "Billing City",
+                    "validation" => "required|max_length[100]",
+                ],
+                [
+                    "name" => "billing_state",
+                    "value" => $post_data["billing_state"],
+                    "caption" => "Billing State",
+                    "validation" => "required|max_length[100]",
+                ],
+                [
+                    "name" => "billing_country",
+                    "value" => $post_data["billing_country"],
+                    "caption" => "Billing Country",
+                    "validation" => "required|max_length[100]",
+                ],
+                [
+                    "name" => "billing_postal_code",
+                    "value" => $post_data["billing_postal_code"],
+                    "caption" => "Postal Code",
+                ],
+                [
+                    "name" => "tos_agree",
+                    "value" => $post_data["tos_agree"],
+                ],
+                [
+                    "name" => "card_name",
+                    "value" => $post_data["card_name"],
+                    "caption" => "Card Holder Name",
+                    "validation" => "required|max_length[100]",
+                ],
+            ] );
 
-            $property_use_info_data = unserialize($property_info["property_use_info"]) ?: [];
-            $property_use_info = new ObjectProxy($property_use_info_data);
+            if ( ! $avoid_posting_cc_data ) {
 
-            $parking_info_data = unserialize($property_info["parking"]) ?: [];
-            $parking_info = new ObjectProxy($parking_info_data);
+                $form_validation = array_merge( $form_validation, [
+                    [
+                        "name" => "card_number",
+                        "value" => $post_data["card_number"],
+                        "caption" => "Card Number",
+                        "validation" => "required|max_length[16]",
+                    ],
+                    [
+                        "name" => "card_cvv",
+                        "value" => $post_data["card_cvv"],
+                        "caption" => "Card CVV",
+                        "validation" => "required|max_length[4]",
+                    ],
+                    [
+                        "name" => "card_expiry_month",
+                        "value" => $post_data["card_expiry_month"],
+                        "caption" => "Expiry Month",
+                        "validation" => "required|max_length[2]",
+                    ],
+                    [
+                        "name" => "card_expiry_year",
+                        "value" => $post_data["card_expiry_year"],
+                        "caption" => "Expiry Year",
+                        "validation" => "required|max_length[4]",
+                    ],
+                ] );
 
-            $pool_info_data = unserialize($property_info["pool"]) ?: [];
-            $pool_info = new ObjectProxy($pool_info_data);
+            } elseif ( $braintree_payment  ) {
 
-            $true_values = ["yes", "true"];
-            $possible_owners = (($deed_info[0]["primary_grantee_1"] ? 1 : 0) + ($deed_info[0]["primary_grantee_2"] ? 1 : 0) + ($deed_info[0]["secondary_grantee_1"] ? 1 : 0) + ($deed_info[0]["secondary_grantee_2"] ? 1 : 0));
-            $assessor_records = count(array_filter($search_data["ras_records"]["property_info"], function ($data) {
+                $form_validation[] = [
+                        "name" => "bt_token",
+                        "value" => $post_data["bt_token"],
+                        "caption" => "Secure Token",
+                        "validation" => "required",
+                ];
 
-                return !empty($data) && ($data != 0);
-            }));
+            } else {
 
-            $loan_count = count($deed_info);
-            $loans = [];
-            array_walk($deed_info, function ($data) use (&$loans) {
+                $form_validation[] = [
+                    "name" => "card_token",
+                    "value" => $post_data["card_token"],
+                    "caption" => "Payment Token",
+                    "validation" => "required",
+                ];
 
-                $mortgage_data = unserialize($data["mortgage_1"]);
-                if (!empty($mortgage_data["Amount"])) {
-                    $loans[] = $mortgage_data["Amount"];
+            }
+
+            if ( ! empty( $post_data["ctoken"] ) ) {
+                /*
+                $form_validation = array_merge( $form_validation, [
+                    [
+                        "name" => "ctoken",
+                        "value" => $post_data["ctoken"],
+                        "caption" => "Payment Token",
+                        "validation" => "required",
+                    ],
+                    [
+                        "name" => "ctoken_card_cvv",
+                        "value" => $post_data["ctoken_card_cvv"],
+                        "caption" => "Card CVV",
+                        "validation" => "required|max_length[4]",
+                    ],
+                ] );
+                */
+                $form_validation = [
+                    [
+                        "name" => "ctoken",
+                        "value" => $post_data["ctoken"],
+                        "caption" => "Payment Token",
+                        "validation" => "required",
+                    ],
+                ];
+
+            }
+
+            if ( ! empty( $post_data["ap_token"] ) ) {
+
+                $form_validation = array_merge( $form_validation, [
+                    [
+                        "name" => "ap_token",
+                        "value" => $post_data["ap_token"],
+                        "caption" => "Payment Token",
+                        "validation" => "required",
+                    ]
+                ] );
+
+            }
+
+            $form_validation = array_merge( $form_validation, [
+                [
+                    "name" => "report_agreement",
+                    "value" => $post_data["report_agreement"],
+                    "caption" => "Report Agreement",
+                    "validation" => "required",
+                ],
+                [
+                    "name" => "signup_purpose",
+                    "value" => ( ! empty( $post_data["signup_purpose"] ) )? implode( "|", $post_data["signup_purpose"] ) : "",
+                ],
+            ] );
+
+            if ( ! empty( $post_data["payment_card"] ) && $post_data["payment_card"] != 'payment_add_new' ) {
+
+                $form_validation = [
+                    [
+                        "name" => "tos_agree",
+                        "value" => $post_data["tos_agree"],
+                    ],
+                    [
+                        "name" => "report_agreement",
+                        "value" => $post_data["report_agreement"],
+                        "caption" => "Report Agreement",
+                        "validation" => "required",
+                    ],
+                    [
+                        "name" => "signup_purpose",
+                        "value" => ( ! empty( $post_data["signup_purpose"] ) )? implode( "|", $post_data["signup_purpose"] ) : "",
+                    ],
+                ];
+
+            }
+
+            if( ! empty( $nmi_payment ) ){
+
+                $form_validation = [
+                    [
+                        "name" => "gateway_token",
+                        "value" => $nmi_token,
+                    ]
+                ];
+
+            }
+
+            if( $membership["show_phone_number"] == 1 ){
+
+                $form_validation = array_merge( $form_validation, [
+                    [
+                        "name" => "billing_phone",
+                        "value" => $post_data[ ( ! empty( $post_data["ctoken"] ) ? "sc_billing_phone" : "billing_phone" ) ],
+                        "caption" => "Phone Number",
+                        "validation" => "required|phone|max_length[100]",
+                    ],
+                ] );
+
+            }
+
+        }
+
+        if ( ! DEBUG ) {
+
+            // add all user emails to sendy list as abandoned cart users
+            // However that email will move from abandoned cart list to customers list ONCE a successfull checkout has completed.
+            if( ! empty( $post_data["email"] )  && ! $do_not_add_to_sendy_lists ){
+
+                $sendy = SYSTEM::loadsendy();
+
+                if( ! empty( $membership["tokens_email"] ) ){
+                    // standard search
+                    $sendy->setListId( SENDY_LIST_ABANDONEDCART_STANDARD_SEARCH );
+                    $sendy->subscribe(array(
+                        'email' => $post_data["email"],
+                        "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    ));
                 }
-            });
-            list($loan_min, $loan_max) = [min($loans), max($loans)];
-            $loan_range = empty($loans) ? "" : ($loan_min == $loan_max ? "\${$loan_min}" : "\${$loan_min} - \${$loan_max}");
+                if( ! empty( $membership["tokens_image"] ) ){
+                    // image search
+                    $sendy->setListId( SENDY_LIST_ABANDONEDCART_IMAGE_SEARCH );
+                    $sendy->subscribe(array(
+                        'email' => $post_data["email"],
+                        "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    ));
 
-            ?>
-            <form method="post"
-                  action="<?php echo RELATIVE_URL . "search.html" ?>" <?php SCF::js_controller("search.click_form") ?>
-                  target="_blank">
-                <input type="hidden" name="search_type" value=""/>
-                <input type="hidden" name="full_name" value=""/>
-                <input type="hidden" name="phone" value=""/>
-                <input type="hidden" name="email" value=""/>
-                <input type="hidden" name="username" value=""/>
-            </form>
-            <form method="post"
-                  action="<?php echo RELATIVE_URL . "dashboard.html" ?>" <?php SCF::js_controller("search.click_form_ras") ?>
-                  target="_blank">
-                <input type="hidden" name="search_type" value=""/>
-                <input type="hidden" name="address" value=""/>
-            </form>
-            <div class="report-box report-main">
-                <div class="row">
-                    <div class="col-sm-8 report-img">
-                        <iframe class="property-map" frameborder="0"
-                                src="https://maps.google.com/maps?q=<?php echo rawurlencode($property_info["address"]) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed"
-                                width="156" height="156" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
-                        <div class="report-content">
-                            <span>Records found for </span>
-                            <h4><?php echo $property_info["address"]; ?></h4>
-                            <strong class="ras-state">State</strong>
-                            <p><?php echo $property_info["state"] ?></p>
-                        </div>
-                    </div>
-                    <?php
-                    if (false) {
-                        ?>
-                        <div class="col-sm-4 text-right actions">
-                            <div class="btn btn-bordered-gray">Share Now <span class="si-share"></span></div>
-                            <br>
-                            <div class="btn btn-darkgray">Tracking Off <span class="si-notification"></span></div>
-                        </div>
-                        <?php
-                    }
-                    ?>
-                </div>
-            </div>
-            <div class="report-box rb-property-summary">
-                <h3>Property Summary</h3>
-                <div class="row summary-lists">
-                    <div class="col-md-4"><span class="si-construct"></span>Constructed in
-                        <label><?php echo $property_info["year_built"] ?: "-"; ?></label></div>
-                    <div class="col-md-4"><span
-                                class="si-ruler"></span><?php echo $property_info["area_building"] ? "{$property_info["area_building"]} SF Building" : ""; ?>
-                        <label><?php echo $property_info["area_lot_sf"] ? "{$property_info["area_lot_sf"]} SF Lot" : ""; ?></label>
-                    </div>
-                    <div class="col-md-4"><span
-                                class="si-home-plan"></span><?php echo $property_info["bedroom_count"]; ?> Bedrooms
-                        <label><?php echo $property_info["bath_count"]; ?> Baths</label></div>
-                    <div class="col-md-4"><span class="si-sale"></span>Sale Price
-                        <label><?php echo ($property_info["deed_last_sale_price"] && "0.00" != $property_info["deed_last_sale_price"]) ? "\${$property_info["deed_last_sale_price"]}" : "-"; ?></label>
-                    </div>
-                    <div class="col-md-4"><span
-                                class="si-tracked-data"></span><?php echo "{$loan_count} Loans" . ($loan_min != $loan_max ? " found in Range of" : ""); ?>
-                        <label><?php echo $loan_range ?></label></div>
-                    <div class="col-md-4"><span class="si-money"></span>Market Value
-                        <label><?php echo ($property_info["market_value"] && "0.00" != $property_info["market_value"]) ? "\${$property_info["market_value"]}" : "-"; ?></label>
-                    </div>
-                    <div class="col-md-4"><span class="si-cooperation"></span>Property Tax
-                        <label><?php echo ($property_info["tax_billed_amt"] && "0.00" != $property_info["tax_billed_amt"]) ? "\${$property_info["tax_billed_amt"]}" : "-"; ?></label>
-                    </div>
-                    <div class="col-md-4"><span class="si-location"></span>Located in
-                        <label><?php echo $property_info["county"]; ?> County</label></div>
-                </div>
-            </div>
-            <div class="report-box rb-summary">
-                <h3>Search Summary</h3>
-                <div class="row summary-lists ras">
-                    <div class="col-md-6"><span class="si-user"></span>Possible Owners
-                        <label>(<?php echo $possible_owners ?: "Not Found" ?>)</label></div>
-                    <div class="col-md-6"><span class="si-phone"></span>County Assessor Records
-                        <label>(<?php echo $assessor_records; ?>)</label></div>
-                    <div class="col-md-6"><span class="si-location"></span>Deeds
-                        <label>(<?php echo count($deed_info) ?: "-"; ?>)</label></div>
-                </div>
-            </div>
-            <div class="report-box rb-summary rb-worth-noting">
-                <h2><span class="si-tip"></span>Worth Noting</h2>
-                <div class="row summary-lists ras">
-                    <div class="col-md-3"><span
-                                class="si-<?php echo in_array($tax_info["TaxExemptionWidow"], $true_values) ? "done" : "close" ?>-circle"></span>Widow:
-                        <label><?php echo in_array($tax_info["TaxExemptionWidow"], $true_values) ? "Yes" : "No" ?></label>
-                    </div>
-                    <div class="col-md-3"><span
-                                class="si-<?php echo in_array($tax_info["TaxExemptionVeteran"], $true_values) ? "done" : "close" ?>-circle"></span>Veteran:
-                        <label><?php echo in_array($tax_info["TaxExemptionVeteran"], $true_values) ? "Yes" : "No" ?></label>
-                    </div>
-                    <div class="col-md-3"><span
-                                class="si-<?php echo in_array($tax_info["TaxExemptionDisabled"], $true_values) ? "done" : "close" ?>-circle"></span>Handicap:
-                        <label><?php echo in_array($tax_info["TaxExemptionDisabled"], $true_values) ? "Yes" : "No" ?></label>
-                    </div>
-                    <div class="col-md-3"><span
-                                class="si-<?php echo in_array($tax_info["TaxExemptionSenior"], $true_values) ? "done" : "close" ?>-circle"></span>Senior:
-                        <label><?php echo in_array($tax_info["TaxExemptionSenior"], $true_values) ? "Yes" : "No" ?></label>
-                    </div>
-                </div>
-            </div>
-            <?php
-            if ($search_data["ras_records"]["property_info"]["opt_out"] != 1 && $possible_owners > 0) { ?>
-                <div class="report-box" data-type="<?php echo SEARCH_TYPE_NAME; ?>">
-                    <div class="row">
-                        <div class="col-xs-12">
-                            <h2><span class="si-user"></span>Possible
-                                Owners<label><?php echo $possible_owners; ?></label></h2>
-                        </div>
-                    </div>
-                    <?php
-                    $owner_fields = ["primary_grantee_1", "primary_grantee_2", "secondary_grantee_1", "secondary_grantee_2"];
+                }
+                if( empty( $membership["tokens_email"] ) && empty( $membership["tokens_image"] ) ){
+                    // hire us search
+                    $sendy->setListId( SENDY_LIST_ABANDONEDCART_SEARCH_SPECIALIST );
+                    $sendy->subscribe(array(
+                        'email' => $post_data["email"],
+                        "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    ));
 
-                    foreach ($owner_fields as $field) {
-                        if (empty($deed_info[0][$field])) {
-                            continue;
-                        }
-                        $show_text = false;
-                        if (!preg_match(RAS_OWNERS, $deed_info[0][$field]) == 1) {
-                            $show_text = true;
-                        }
-                    } ?>
-                    <p class="box-title">According to the most updated deed, these are the possible owners of this
-                        property. <?php if ($show_text) {
-                            ?>Click on 'Run Search' to find out more information about any possible owner.<?php
-                                  } ?></p>
-                    <div class="row img-box-row">
-                        <?php
-                        $owner_fields = ["primary_grantee_1", "primary_grantee_2", "secondary_grantee_1", "secondary_grantee_2"];
-                        //opted out owners
-                        $owner = array("Tamara G Page");
-                        foreach ($owner_fields as $field) {
-                            if (empty($deed_info[0][$field])) {
-                                continue;
-                            }
-                            if (in_array($deed_info[0][$field], $owner)) {
-                                continue;
-                            }
-
-                            $image = rand(1, 108);
-                            ?>
-
-
-                            <div class="col-xs-6 col-md-3 img-box-list">
-                                <div class="box-col">
-                                    <div class="img-thumbnail">
-                                        <img src="<?php echo $common_assets_url . "/images/owners/owner_{$image}.jpg" ?>"
-                                             alt="User"
-                                             style="background-image: url(<?php echo $common_assets_url . "/images/owners/owner_{$image}.jpg" ?>);"
-                                             decoding="async" loading="lazy"/>
-                                    </div>
-                                    <a class="box-name ras_owner"><?php echo $deed_info[0][$field]; ?></a>
-                                    <?php
-                                    if (!preg_match(RAS_OWNERS, $deed_info[0][$field]) == 1) { ?>
-                                        <a data-query="<?php echo $deed_info[0][$field]; ?>" <?php SCF::js_controller("search.form_run_search") ?>
-                                           class="run-search btn">Run Search</a>
-                                    <?php } ?>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                </div>
-            <?php } ?>
-            <div class="report-box country_assessor">
-                <div class="row">
-                    <div class="col-xs-12">
-                        <h2><span class="si-money"></span>County Assessor
-                            Records<label><?php echo $assessor_records; ?></label></h2>
-                    </div>
-                </div>
-                <p class="box-title">The sections below contain information from publicly available records maintained
-                    by the County Assessor (Recorder or Clerk) on the property and property's owner.</p>
-                <div class="box-col">
-                    <h4>Property Owner Details</h4>
-                    <p>Electronically accessible information on this property's owner is detailed below.</p>
-                    <h5><?php echo $property_info["address"]; ?></h5>
-                    <div class="country_as_list">
-                        <div class="row">
-                            <div class="col-md-4"><strong>Owner Occupied</strong></div>
-                            <div class="col-md-8">: <?php echo($property_info["owner_address"] ? "No" : "Yes"); ?></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4"><strong>Ownership Vesting Type</strong></div>
-                            <div class="col-md-8">: <?php echo($property_info["vesting_type"] ?: "-"); ?></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4"><strong>Mailing Address for Taxes</strong></div>
-                            <div class="col-md-8">
-                                : <?php echo($property_info["owner_address"] ?: $property_info["address"]); ?></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="box-col">
-                    <h4>Property Value & Taxes</h4>
-                    <p>Valuation and tax details that have been made electronically accessible are detailed below.</p>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <h5>Market Value</h5>
-                            <div class="country_as_list">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Total Value</strong></div>
-                                    <div class="col-xs-6">
-                                        : <?php echo ($property_info["market_value"] && "0.00" != $property_info["market_value"]) ? "\${$property_info["market_value"]}" : "N/A"; ?></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <h5>Assessed Value As of <?php echo $property_info["tax_year"]; ?></h5>
-                            <div class="country_as_list">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Total Value</strong></div>
-                                    <div class="col-xs-6">
-                                        : <?php echo ($property_info["assessed_value"] && "0.00" != $property_info["assessed_value"]) ? "\${$property_info["assessed_value"]}" : "N/A"; ?></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <h5>Property Taxes for <?php echo $property_info["tax_year"]; ?></h5>
-                            <div class="country_as_list">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Tax Amount</strong></div>
-                                    <div class="col-xs-6">
-                                        : <?php echo ($property_info["tax_billed_amt"] && "0.00" != $property_info["tax_billed_amt"]) ? "\${$property_info["tax_billed_amt"]}" : "N/A"; ?></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="box-col">
-                    <h4>Location of Property</h4>
-                    <p>Electronically accessible location identifiers for this property are listed below.</p>
-                    <h5><?php $property_info["address"]; ?></h5>
-                    <div class="country_as_list">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>State</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["state"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>County</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["county"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Municipality</strong></div>
-                                    <div class="col-xs-6">
-                                        : <?php echo $property_info["PropertyUseMuni"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>City</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["city"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>FIPS County Code</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["fips_code"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>APN</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["apn"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Zip</strong></div>
-                                    <div class="col-xs-6">: <?php echo $property_info["zip"] ?: "-"; ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Subdivision</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["Subdivision"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Tract Number</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["TractNumber"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Block</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["Block"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Section</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["Section"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Unit</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["Unit"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Lot</strong></div>
-                                    <div class="col-xs-6">: <?php echo $legal_info["Lot"] ?: "N/A" ?></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row">
-                                    <div class="col-xs-6"><strong>Map</strong></div>
-                                    <div class="col-xs-6"><span class="clcik_here"
-                                                                data-target="https://www.google.com/maps/@<?php echo $property_info["lat"]; ?>,<?php echo $property_info["lng"]; ?>,15z" <?php SCF::js_controller("lnt") ?>>:  Click here</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="box-col-join">
-                    <div class="box-col box-col-lbuilding">
-                        <h4>Lot & Building Details</h4>
-                        <p>Electronically accessible details on the lot and building(s) that comprise this property are
-                            shown below.</p>
-                        <h5>Lot Details</h5>
-                        <div class="country_as_list">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="row">
-                                        <div class="col-xs-6">Standardized Land Use Code</div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_use_info["PropertyUseStandardized"] ?: "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6">County Land Use Code</div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_use_info["PropertyUseMuni"] ?: "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6">Zoning</div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_use_info["ZonedCodeLocal"] ?: "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6">Buildings</div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $ext_building_info["BuildingsCount"] ?: "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6">Lot Size</div>
-                                        <div class="col-xs-6">
-                                            : <?php echo ($property_info["area_lot_sf"] && "0.00" != $property_info["area_lot_sf"]) ? "{$property_info["area_lot_sf"]} Sq Ft" : "N/A"; ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="box-col">
-                        <h5>Building Details</h5>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <h6>Overall Attributes</h6>
-                                <div class="country_as_list">
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Total Square Footage</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo ($property_info["area_building"] && "0.00" != $property_info["area_building"]) ? "{$property_info["area_building"]} Sq Ft" : "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Number of Stories</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $int_room_info["StoriesCount"] ?: "1"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Number of Units</strong></div>
-                                        <div class="col-xs-6">: <?php echo $int_room_info["UnitsCount"] ?: "1"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Year Built</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_info["year_built"] ?: "N/A"; ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Exterior Dimensions</h6>
-                                <div class="country_as_list">
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Total Finished Area</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo ($property_info["area_building"] && "0.00" != $property_info["area_building"]) ? "{$property_info["area_building"]} Sq Ft" : "N/A"; ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Garage</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo !empty($parking_info_data) ? "Yes" : "N/A" ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Pool</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo !empty($pool_info_data) ? "Yes" : "N/A" ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <h6>Interior Dimensions</h6>
-                                <div class="country_as_list">
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Total Room Count</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_info["room_count"] ?: "N/A" ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Bedrooms</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_info["bedroom_count"] ?: "N/A" ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Bathrooms</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_info["bath_count"] ?: "N/A" ?></div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-6"><strong>Year Built</strong></div>
-                                        <div class="col-xs-6">
-                                            : <?php echo $property_info["year_built"] ?: "N/A"; ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php
-            if (count($deed_info)) {
-                if ($search_data["ras_records"]["property_info"]["opt_out"] != 1) { ?>
-                    <div class="report-box deeds_box">
-                        <div class="row">
-                            <div class="col-xs-12">
-                                <h2>
-                                    <span class="si-property"></span>Deeds<label><?php echo count($deed_info); ?></label>
-                                </h2>
-                            </div>
-                        </div>
-                        <p class="box-title">Any transaction such as ownership changes and property loans-that have been
-                            made digitally accessible by the county this property is located in are detailed below.</p>
-                        <h3><span><?php echo count($deed_info); ?> deeds</span> were found for this property.</h3>
-                        <?php
-                        foreach ($deed_info as $deed) {
-                            $mortage = unserialize($deed["mortgage_1"]);
-                            $mortage_seconday = unserialize($deed["mortgage_2"]);
-                            $doc_info = unserialize($deed["doc_info"]);
-                            $tax_info = unserialize($deed["tax_info"]);
-
-                            $date = (!empty($deed["mortgage_date"]) && $deed["mortgage_date"] != "0000-00-00") ? $deed["mortgage_date"] : $deed["recording_date"];
-                            $timestamp = strtotime($date);
-                            ?>
-                            <div class="deed_section">
-                                <div class="deed_list">
-                                    <div class="deed_date"><?php echo date("M", $timestamp) . "<br />" . date("Y", $timestamp) ?></div>
-                                    <div class="deed_body">
-                                        <h4><?php echo ($deed["primary_grantor_1"] <> "") ? "Ownership Change" : "New Loan Recorded"; ?></h4>
-                                        <p>
-                                            From: <?php echo $deed["primary_grantor_1"] ?: ($mortage["LenderFullName"] ?: "N/A"); ?></p>
-                                        <p>To: <?php echo $deed["primary_grantee_1"]; ?></p>
-                                    </div>
-                                    <div class="deed_action si-plus" <?php SCF::js_controller("results.ras.deeds") ?>></div>
-                                </div>
-                                <div class="box-col-join">
-                                    <div class="box-col primary_lender">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h5>Primary Lender Details</h5>
-                                                <div class="country_as_list">
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Lender</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage["LenderFullName"] ?: "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Loan Amount</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage["Amount"] ? "\${$mortage["Amount"]}" : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Loan Type</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage["Type"] ?: "N/A"; ?></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <h5>Secondary Lender Details</h5>
-                                                <div class="country_as_list">
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Lender</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage_seconday["LenderFullName"] ?: "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Loan Amount</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage_seconday["Amount"] ? "\${$mortage_seconday["Amount"]}" : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Loan Type</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $mortage_seconday["Type"] ?: "N/A"; ?></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="box-col">
-                                        <h5>County Records</h5>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="country_as_list">
-                                                    <div class="row">
-                                                        <div class="col-xs-6">State</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $property_info["state"]; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">County</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo $property_info["county"]; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Transfer Date</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo date(DATE_FORMAT, $timestamp); ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Transfer Amount</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo ($deed["transfer_amount"] && "0.00" != $deed["transfer_amount"]) ? "\${$deed["transfer_amount"]}" : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Transfer Tax</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo ($tax_info["TransferTaxTotal"] && "0.00" != $tax_info["TransferTaxTotal"]) ? "\${$deed["TransferTaxTotal"]}" : "N/A"; ?></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="country_as_list">
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Document Number</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo !empty($doc_info["NumberFormatted"]) ? $doc_info["NumberFormatted"] : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Document Type</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo !empty($doc_info["TypeCode"]) ? $doc_info["TypeCode"] : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Book Number</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo !empty($doc_info["Book"]) ? $doc_info["Book"] : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Page Number</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo !empty($doc_info["Page"]) ? $doc_info["Page"] : "N/A"; ?></div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-xs-6">Recording Date</div>
-                                                        <div class="col-xs-6">
-                                                            : <?php echo date(DATE_FORMAT, $timestamp); ?></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                        ?>
-                    </div>
-                    <?php
                 }
             }
-            ?>
-            <div class="report-box scf-neighborhood">
-                <div class="row">
-                    <div class="col-xs-12">
-                        <h2><span class="si-warning"></span> Neighborhood Safety Report
-                            <label><?php echo count($radius_info); ?></label></h2>
-                    </div>
-                </div>
-                <p id="latitude" style="display:none"><?php echo $property_info["lat"]; ?></p>
-                <p id="longitude" style="display:none"><?php echo $property_info["lng"]; ?></p>
-                <p id="zip" style="display:none"><?php echo $property_info["zip"]; ?></p>
-                <p class="box-title">There are <?php echo count($radius_info); ?> Sex Offenders who live near this
-                    address.</p>
+            ############## END add emails to sendy list
 
-                <div id="radius-map"<?php SCF::js_controller("results.ras.map") ?>></div>
+        }
 
-                <?php
-                $record_id = array();
-                foreach ($radius_info as $data) {
-                    if (in_array($data["record_id"], $record_id)) {
-                        continue;
+        // Check whether user has Premium Credits and the Plan is a Premium One Time Plan
+        $one_time_premium_plans = ( $user_id && $user_data["premium_credit_balance"] ) ? Membership::get_one_time_premium_plans() : [];
+        $minimum_required_amount = $multiple_membership_options ? Membership::get_minimum_required_points( $token_session_data["membership_options"], $one_time_premium_plans ) : $membership["initial_amount"];
+        $show_premium_credit_option = ( $minimum_required_amount <= $user_data["premium_credit_balance"] ) && ( ( $multiple_membership_options && ! empty( array_intersect( array_keys( $token_session_data["membership_options"] ), $one_time_premium_plans ) ) ) || ( in_array( $membership["id"], $one_time_premium_plans ) ) );
+
+        if ( "checkout" == $action ) {
+
+            //$user_in_blocked_list = User::user_in_blocked_list( $post_data );
+            //if( $user_in_blocked_list ) $error_messages[] = "Sorry.. You have been blocked by the system. Please contact us.";
+
+            // Multi-membership Plan Selection
+            if ( $multiple_membership_options ) {
+
+                // Mod for PayPal Express Checkout
+                if ( ! empty( $input_get->p_id ) && empty( $post_data["plan_id"] ) ) $post_data["plan_id"] = $input_get->p_id;
+
+                if ( isset( $token_session_data["membership_options"][ $post_data["plan_id"] ] ) ) {
+
+                    $membership = $token_session_data["membership_options"][ $post_data["plan_id"] ];
+                    $token_session_data["membership_id"] = $post_data["plan_id"];
+                    $token_session_data["membership"] = $membership;
+
+                } else {
+
+                    unset( $_SESSION["tokens"][ $token ] );
+                    SYSTEM::redirect( PAGE_URL_MEMBERSHIP_LEVELS );
+
+                }
+
+            }
+
+            $checkout_step = ( $override_checkout ) ? $override_checkout : 2;
+            $payment_method = ( ! empty( $post_data["method"] ) ) ? $post_data["method"] : ( ! empty( $token_session_data["method"] ) ? $token_session_data["method"] :  "payflowpro" );
+            $token_session_data["last_payment_method"] = $payment_method;
+
+            switch ( $payment_method ) {
+
+                case "paypal_express":
+                    $payment_gateway = "paypal_express_checkout";
+                    $avoid_validation = true;
+                    break;
+
+                case "amazonpay":
+                    $payment_gateway = "amazonpay";
+                    break;
+
+                case "nmi":
+                    $payment_gateway = "nmi";
+                    break;
+
+                case "pcb":
+                    $payment_gateway = "pcb";
+                    $avoid_validation = true;
+                    break;
+
+                default: $payment_gateway = $payment_gateway_default;
+
+            }
+
+            $is_subscription = ( $membership["recurring_amount"] > 0 );
+
+            if ( empty( $avoid_validation ) && empty( $user_data["membership_plan"] ) ) $error_fields = SYSTEM::form_validate( $form_validation );
+            if ( ! $user_id && ! empty( $post_data["email"] ) && User::get_by_email( $post_data["email"] ) ) $error_messages[] = "E-Mail Address already in use. Please login.";
+            //if ( ! $user_id && ! empty( $post_data["email"] ) && User::is_email_blocked( $post_data["email"] ) ) $error_messages[] = "E-Mail Address blocked.";
+            if ( empty( $post_data["tos_agree"] ) ) $error_messages[] = "Please accept the Terms of Service.";
+
+            // Cross check email against mailing lists
+            $do_not_add_to_sendy_lists = false;
+            if ( ! empty( $membership["check_mailing_list"] ) && defined( "SENDY_LIST_{$membership["check_mailing_list"]}" ) ) {
+                if( ! Membership::check_email_for_sendy_list( constant( "SENDY_LIST_{$membership["check_mailing_list"]}" ), $post_data["email"] ) ){
+                    $error_messages[] = "The email you entered is not registered for this promo. Please try again.";
+                } else $do_not_add_to_sendy_lists = true;
+            }
+
+            if( ! empty( $membership["check_mailing_list"] ) && $membership["check_mailing_list"] == "DR_PHIL_SHOW" && $current_time_ca->format('Y-m-d') > $dr_phil_promo_end_date ){
+                $error_messages[] = "Sorry, This promo has ended.";
+            }
+
+
+            if ( "paypal_express_checkout" == $payment_gateway ) {
+
+                require( "payment_gateways/{$payment_gateway}.php" );
+
+            }
+
+            if ( empty( $error_messages ) ) {
+
+                if ( empty( $avoid_merge ) ) $token_session_data = array_merge( $token_session_data, SYSTEM::construct_custom_array( $form_validation, "name", "{value}" ) );
+                extract( $token_session_data, EXTR_PREFIX_ALL, "cc" );
+                $payment_error = $transaction_id = "";
+
+                if ( $is_subscription ) {
+
+                    switch ( $membership["start_recurring_period"] ) {
+
+                        case "days":
+
+                            if ( 5 == $membership["start_recurring_frequency"] && ( "payflowpro" == $payment_gateway || "paypal_express_checkout" == $payment_gateway ) ) $start_subscription = strtotime( "+6 days" );
+                            else $start_subscription = strtotime( "+{$membership["start_recurring_frequency"]} days" );
+                            break;
+
+                        case "mont": $start_subscription = strtotime( "+{$membership["start_recurring_frequency"]} month" ); break;
+                        case "year": $start_subscription = strtotime( "+{$membership["start_recurring_frequency"]} year" ); break;
+
                     }
-                    $record_id[] = $data["record_id"];
 
-                    $types = ["SEX" => "Sex Offenders Registry", "DOC" => "Department of Corrections", "Arrest-Log" => "Arrest Logs"];
-                    $source = "Court Records";
-                    foreach ($types as $type => $caption) {
-                        if (strpos($data["record_id"], $type) !== false) {
-                            $source = $caption;
+                }
+
+				if ( ! $testcase_is_running && $membership["initial_amount"] > 0 ) {
+
+                    if ( $payment_gateway == "usaepay" ) require( "payment_gateways/process_signup.php" );
+                    elseif ( $payment_gateway == "pcb" ) {
+
+                        if ( ! in_array( $membership["id"], $one_time_premium_plans ) ) $payment_error = "Sorry! Subscriptions cannot be purchased using Premium Credit Balance.";
+                        elseif ( $membership["initial_amount"] > $user_data["premium_credit_balance"] ) $payment_error = "Sorry! There's not enough credits to purchase this plan.";
+                        else {
+
+                            User::use_premium_credit_balance( $user_id, $membership["initial_amount"] );
+                            $transaction_id = uniqid( "pcb" );
+
+                        }
+
+                    }
+                    else require( "payment_gateways/{$payment_gateway}.php" );
+
+                }
+
+                // Payment Response Tracking
+                $payment_tracking_data = [
+                    "date" => date( "Y-m-d H:i:s"),
+                    "pg" => $payment_gateway,
+                    "first_name" => ! empty( $cc_billing_firstname ) ? $cc_billing_firstname : "",
+                    "last_name" => $cc_billing_lastname,
+                    "email" => $cc_email,
+                    "subscription" => ( $is_subscription ? 1 : 0 ),
+                    "membership_id" => $membership["id"],
+                    "amount" => $membership["initial_amount"],
+                    "auth_response" => ( ( ! empty( $response_verification ) ) ? serialize( $response_verification ) : "" ),
+                    "sale_response" => ( ( ! empty( $response_sale ) ) ? serialize( $response_sale ) : "" ),
+                    "subscription_response" => ( ( ! empty( $response_subscription ) ) ? serialize( $response_subscription ) : "" ),
+                    "success" => $payment_error ? 0 : 1,
+                ];
+
+                $payment_tracking_data_id = Membership::add_pg_response( $payment_tracking_data );
+
+                if ( ! empty( $payment_error ) ) {
+
+                    $_SESSION["extract"]["error_messages"][] = $payment_error;
+                    Behavior::system_log_action( __FILE__, __LINE__, __METHOD__, "Checkout Payment Errors::" . $payment_error, ["errors", "checkout payment errors {$payment_gateway}", $payment_error ] );
+
+                } else {
+
+                    if ( ! $testcase_is_running ) {
+
+                        Behavior::system_log_action( __FILE__, __LINE__, __METHOD__, "plan conversion: ". $membership['id']. "",  ["initial amount: ".$membership["initial_amount"]] );
+
+
+
+
+                        /** check for new user */
+                        if(isset($_SESSION["new_user_registered"])){
+                            $_SESSION["new_user_registered"] = true;
+                        }
+
+                        // Remove header and footer test
+                        if (isset($_SESSION["removed-head-foot"])) {
+                            if($_SESSION["removed-head-foot"]) $_SESSION["removed-head-foot"] = false;
+                            unset($_SESSION["removed-head-foot"]);
+                        }
+
+                        //AB Testing Start
+
+                        if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_three_capture"]) && !isset($_SESSION["step_four_capture"])) {
+                            $_SESSION["ab_email_capture"]->track_event("4_search_capture_conversion", SYSTEM::get_device_type());
+                            $_SESSION["step_four_capture"] = true;
+                        }
+
+                        if (!isset($_SESSION["step_four_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && isset($_SESSION["step_three_price_ss"])) {
+                            $_SESSION["ab_price_change_ss"]->track_event("4_conversion_price_ss", SYSTEM::get_device_type());
+                            $_SESSION["step_four_price_ss"] = true;
+                        }
+
+                        if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_three_price_ris"]) && !isset($_SESSION["step_four_price_ris"]) ) {
+                            $_SESSION["ab_price_change_ris"]->track_event("4_conversion_price_ris", SYSTEM::get_device_type());
+                            $_SESSION["step_four_price_ris"] = true;
+                        }
+
+                        if (isset($_SESSION["ab_premium_idi_SO"]) && isset($_SESSION["step_four_idi"]) && !isset($_SESSION["step_five_idi"]) ) {
+
+                            if ( "revised" == $_SESSION["ab_premium_idi_SO"]->variation_key ) {
+                                if (isset($_SESSION["active_boosted_ontime"])) {
+                                    $_SESSION["ab_premium_idi_SO"]->track_event("5_premium_conversion_idi_SO", SYSTEM::get_device_type());
+                                } else {
+                                    $_SESSION["ab_premium_idi_SO"]->track_event("5_non_premium_conversion_idi_SO", SYSTEM::get_device_type());
+                                }
+                            } else {
+                                $_SESSION["ab_premium_idi_SO"]->track_event("5_regular_conversion_idi_SO", SYSTEM::get_device_type());
+                            }
+                            $_SESSION["step_five_idi"] = true;
+                            
+                        }
+
+                        if ( $membership["id"] == PLAN_PREMIUM_DATA_MONTHLY || $membership["id"] == PLAN_PREMIUM_DATA ) {
+
+                            if(isset($_SESSION["no_premium"])) $_SESSION["no_premium"]->track_event("conversion", $device);
+
+                        }
+   
+                        if(isset($_SESSION["rebuild_two"])) $_SESSION["rebuild_two"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["ss_ultra_focus"])) $_SESSION["ss_ultra_focus"]->track_event("conversion", $device);
+
+                        if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["cr_choice"])) {
+                            switch ($_SESSION["cr_choice"]) {
+                                case 'results':
+                                    $_SESSION["ab_cr_signedout_2022"]->track_event("9_2_results_conversion_cr", $device);
+                                    break;
+
+                                case 'no_results':
+                                    $_SESSION["ab_cr_signedout_2022"]->track_event("9_1_no_results_conversion_cr", $device);
+                                    break;
+
+                                case 'cancel':
+                                    $_SESSION["ab_cr_signedout_2022"]->track_event("9_dont_search_conversion_cr", $device);
+                                    break;
+
+                                case 'none':
+                                    $_SESSION["ab_cr_signedout_2022"]->track_event("9_3_standard_conversion_cr", $device);
+                                    break;
+
+                                default:
+
+                                    break;
+                            }
+                        }
+
+                        if (isset($_SESSION["ab_premium_scroll"]) && isset($_SESSION["step_one_premium_scroll"]) && !isset($_SESSION["step_two_premium_scroll"])) {
+                            $_SESSION["ab_premium_scroll"]->track_event("2_premium_conversion", SYSTEM::get_device_type());
+                            $_SESSION["step_two_premium_scroll"] = true;
+                        }
+
+                        if(isset($_SESSION["better_results"])) $_SESSION["better_results"]->track_event("conversion", $device);
+                        
+                        if(isset($_SESSION["br_survey"])) $_SESSION["br_survey"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["br_no_survey"])) $_SESSION["br_no_survey"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["existing_user"])) $_SESSION["existing_user"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["homepage_headline"])) $_SESSION["homepage_headline"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["ab_blog_2020"])) $_SESSION["ab_blog_2020"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["ab_ris_speed"])) $_SESSION["ab_ris_speed"]->track_event("conversion", $device);
+
+                        if(isset($_SESSION["ab_us_only"])) $_SESSION["ab_us_only"]->track_event("conversion", $device);
+
+                        if (isset($_SESSION["step_four"]) && isset($_SESSION["ab_baselines_old_img"])) $_SESSION["ab_baselines_old_img"]->track_event("ris_user_conversion", SYSTEM::get_device_type());
+
+                        if (isset($_SESSION["step_four_basic"]) && isset($_SESSION["ab_baselines_basic_img"])) $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_user_conversion", SYSTEM::get_device_type());
+
+                        if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_four_name"]) ) {
+                            $_SESSION["ab_baselines_home_name"]->track_event("5_conversion", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_three_phone_main"]) ) {
+                            $_SESSION["ab_baselines_phone_main"]->track_event("4_phone_main_conversion", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_search_progress_WW_SS"]) && isset($_SESSION["step_four_WW_SS"]) && !isset($_SESSION["step_five_WW_SS"])) {
+                            $_SESSION["ab_search_progress_WW_SS"]->track_event("5_conversion_WW_RIS", SYSTEM::get_device_type());
+                            $_SESSION["step_five_WW_SS"] = true;
+                        }
+
+                        if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_four_username"]) ) {
+                            $_SESSION["ab_baselines_username"]->track_event("5_username_conversion", SYSTEM::get_device_type());
+                        }
+                        
+                        if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_three_phone"]) ) {
+                            $_SESSION["ab_baselines_phone"]->track_event("4_phone_conversion", SYSTEM::get_device_type());
+                        }
+                        
+                        if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_three_email"]) ) {
+                            $_SESSION["ab_baselines_email"]->track_event("4_email_conversion", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_seven_ras"]) ) {
+                            $_SESSION["ab_baselines_ras"]->track_event("3_ras_conversion", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_seven_ras_main"]) ) {
+                            $_SESSION["ab_baselines_ras_main"]->track_event("3_ras_main_conversion", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_three_ris"]) ) {
+                            $_SESSION["ab_baselines_image"]->track_event("4_image_conversion", SYSTEM::get_device_type());
+                        }
+                        if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_three_ris_main"]) ) {
+                            $_SESSION["ab_baselines_image_main"]->track_event("4_image_conversion_main", SYSTEM::get_device_type());
+                        }
+               
+                        if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_three_ris_ad"]) ) {
+                            $_SESSION["ab_baselines_image_ad"]->track_event("4_image_conversion_ad", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_three_email_main"]) ) {
+                            $_SESSION["ab_baselines_email_main"]->track_event("4_email_conversion_main", SYSTEM::get_device_type());
+                        }
+                        
+                        if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_four_username_main"]) ) {
+                            $_SESSION["ab_baselines_username_main"]->track_event("5_username_conversion_main", SYSTEM::get_device_type());
+                        }
+
+                        if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_three_WW_RIS"]) && !isset($_SESSION["step_four_WW_RIS"]) ) {
+                            $_SESSION["ab_search_progress_WW_RIS"]->track_event("4_image_conversion_WW", SYSTEM::get_device_type());
+                            $_SESSION["step_four_WW_RIS"] = true;
+                        }
+
+                        //AB Testing End
+
+                    }
+
+                    if ( ! $user_id ) {
+
+                        $user_data = [
+                            "first_name" => $cc_billing_firstname,
+                            "last_name" => $cc_billing_lastname,
+                            "email" => $cc_email,
+                            "password" => $cc_password,
+                            "address_1" => ( ! empty( $cc_billing_address1 ) ? $cc_billing_address1 : "" ),
+                            "address_2" => ( ! empty( $cc_billing_address2 ) ? $cc_billing_address2 : "" ),
+                            "country" => ( ! empty( $cc_billing_country ) ? $cc_billing_country : "" ),
+                            "city" => ( ! empty( $cc_billing_city ) ? $cc_billing_city : "" ),
+                            "state" => ( ! empty( $cc_billing_state ) ? $cc_billing_state : "" ),
+                            "postal_code" => $cc_billing_postal_code,
+                            "phone_number" => ( ! empty( $cc_billing_phone ) ? $cc_billing_phone : "" ),
+                            "flagged_email" => $_SESSION["email_verification_status"],
+                        ];
+                        unset($_SESSION["email_verification_status"]); 
+
+                        if( $privacy_lock_activated ){
+                            $user_data["privacy_lock"] = 2;
+                            $user_data["privacy_lock_emails"] = serialize( [ $cc_email, 2, 0 ] );
+                        }
+
+                        if ( ! empty( $_SESSION["advertisement_data"]["source"] ) || ! empty( $_SESSION["advertisement_data"]["referer"] ) ) {
+
+                            $user_data["ref_source"] = ! empty( $_SESSION["advertisement_data"]["source"] ) ? $_SESSION["advertisement_data"]["source"] : "";
+                            $user_data["ref_referer"] = ! empty( $_SESSION["advertisement_data"]["referer"] ) ? $_SESSION["advertisement_data"]["referer"] : "";
+
+                        }
+
+                        if ( User::create( $user_data ) ) {
+                            
+                            $_SESSION["extract"]["new_user"] = true;
+                            $_SESSION["extract"]["trigger_new_user"] = true;
+                            $_SESSION["extract"]["success_messages"][] = "Thank you for your payment. Account created successfully.";                            
+                            
+                            $user = User::get_by_email( $cc_email );
+                            if( ! empty( $_SESSION["no_results_history"] ) ) {
+                                foreach( $_SESSION["no_results_history"] as $index => $row ) {
+                                    if( ! empty( $row ) ) {
+                                        Search::save_results_for_user( $user["id"], $row );
+                                    }
+                                }
+                                unset( $_SESSION["no_results_history"] );
+                            }
+
+                            if(!empty($_SESSION['no_result_funnel_id'])){
+                                $data["option"] = 1;
+                                $data["user_id"] =$user["id"];
+                                Search::no_results_tracking(6,$data);
+                                unset($_SESSION['no_result_funnel_id']);
+                                unset($_SESSION['no_result_funnel_step']);
+                            };
+                            if ( ! empty($_SESSION["sign_up_purpose"] ) ) {
+                                $cc_signup_purpose = array_fill_keys( $_SESSION["sign_up_purpose"], 1 );
+                                $lost_loved_one = isset( $cc_signup_purpose[ SIGN_UP_PURPOSE_LOST_LOVED_ONE ] );
+                                $research_myself = isset( $cc_signup_purpose[ SIGN_UP_PURPOSE_RESEARCH ] );
+                                $professional_use = isset( $cc_signup_purpose[ SIGN_UP_PURPOSE_PROFESSIONAL ] );
+                                unset( $cc_signup_purpose[ SIGN_UP_PURPOSE_SOME_MET_ONLINE ], $cc_signup_purpose[ SIGN_UP_PURPOSE_LOST_LOVED_ONE ], $cc_signup_purpose[ SIGN_UP_PURPOSE_RESEARCH ], $cc_signup_purpose[ SIGN_UP_PURPOSE_PROFESSIONAL ], $cc_signup_purpose["other"] );
+                                $other = ( ! empty( $cc_signup_purpose ) ) ? key( $cc_signup_purpose ) : "";
+
+                                $signup_purpose_data = array(
+                                    "user_id" => $user["id"],
+                                    "verify_someone" => $verify_someone,
+                                    "lost_loved_one" => $lost_loved_one,
+                                    "research_myself" => $research_myself,
+                                    "professional_use" => $professional_use,
+                                    "other" => $other
+                                );
+
+                                Membership::add_signup_purpose( $signup_purpose_data );
+
+                            }
+
+                            if ( ! empty( $user ) ) {
+
+                                $_SESSION["user"] = $user;
+                                setcookie( SESSION_NAME, session_id(), time() + ( 86400 * 30 ), "/" );
+                                $user_id = $user["id"];
+
+                            }
+                            
+                            if ( ! DEBUG && ! $testcase_is_running ) {
+                            	                            	
+                                if ( ! empty( $membership["mailing_list"] ) && ! $do_not_add_to_sendy_lists ) {
+
+                                    $sendy = SYSTEM::loadsendy();
+                                    $sendy_list_id = explode( ",", strtoupper( str_replace( " ", "", $membership["mailing_list"] ) ) );
+
+                                    if( ! empty( $sendy_list_id ) )
+                                        foreach ( $sendy_list_id as $_sendy_list_id ){
+
+                                            $sendy->setListId( constant( "SENDY_LIST_" . $_sendy_list_id ) );
+                                            $sendy->subscribe(array(
+                                                'email' => $cc_email,
+                                                "name" => ( ! empty( $cc_billing_firstname ) ? $cc_billing_firstname . " " : "" ) . ( ! empty( $cc_billing_lastname ) ? $cc_billing_lastname : "" )
+                                            ));
+
+                                    }
+                                }
+
+                                // This is a user with successfull payment and this user's emails has been added to sendy list as abandoned cart user
+                                // Here current user's email will move from abandoned cart list to customers list.
+                                if( ! empty( $post_data["email"] )  && ! $do_not_add_to_sendy_lists ){
+
+                                    $sendy = SYSTEM::loadsendy();
+
+                                    if( ! empty( $membership["tokens_email"] ) ){
+                                        // standard search
+                                        $sendy->setListId( SENDY_LIST_ABANDONEDCART_STANDARD_SEARCH );
+                                        $sendy_substatus = $sendy->substatus( $post_data["email"] );
+                                        $sendy->unsubscribe( $post_data["email"] );
+
+                                            $sendy->setListId( SENDY_LIST_SITE_SIGNUP );
+                                            $sendy->subscribe(array(
+                                                'email' => $post_data["email"],
+                                                "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    
+                                            ));
+
+
+                                    }
+                                    if( ! empty( $membership["tokens_image"] ) ){
+                                        // image search
+                                        $sendy->setListId( SENDY_LIST_ABANDONEDCART_IMAGE_SEARCH );
+                                        $sendy_substatus = $sendy->substatus( $post_data["email"] );
+                                        $sendy->unsubscribe( $post_data["email"] );
+
+
+                                            $sendy->setListId( SENDY_LIST_RIS );
+                                            $sendy->subscribe(array(
+                                                'email' => $post_data["email"],
+                                                "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    
+                                            ));
+
+                                    }
+                                    if( empty( $membership["tokens_email"] ) && empty( $membership["tokens_image"] ) ){
+                                        // hire us search
+                                        $sendy->setListId( SENDY_LIST_ABANDONEDCART_SEARCH_SPECIALIST );
+                                        $sendy_substatus = $sendy->substatus( $post_data["email"] );
+                                        $sendy->unsubscribe( $post_data["email"] );
+
+                                            $sendy->setListId( SENDY_LIST_INDEPTH );
+                                            $sendy->subscribe(array(
+                                                'email' => $post_data["email"],
+                                                "name" => ( ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] . " " : "" ) . ( ! empty( $post_data["billing_lasttname"] ) ? $post_data["billing_lasttname"] : "" )
+                    
+                                            ));
+
+                                    }
+                                }
+                                ############## END add emails to sendy list
+
+                            }
+
+                            if ( ! empty( $token_session_data["image_search_data"] ) ) {
+
+                                $reduce_image_token = Search::assign_image_search_to_user( $token_session_data["image_search_data"]["pending_image_id"], $user_id );
+
+                            }
+
+                            //send verification email
+                           user::send_verification_link($user_id, $post_data["email"]);
+
+                        }
+
+                    } else {
+
+                        if ( ! DEBUG && ! $testcase_is_running ) {
+
+                            if ( ! empty( $membership["mailing_list"] )  && ! $do_not_add_to_sendy_lists ) {
+
+                                $sendy = SYSTEM::loadsendy();
+                                $sendy_list_id = explode( ",", strtoupper( str_replace( " ", "", $membership["mailing_list"] ) ) );
+
+                                $add_to_multiple_list = false;
+
+                                if( ! empty( $sendy_list_id ) ) {
+
+                                    foreach ( $sendy_list_id as $_sendy_list_id ){
+
+                                        switch( $_sendy_list_id ){
+
+                                            case "INDEPTH" :
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_SITE_SIGNUP );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_RIS );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+                                                break;
+
+                                            case "SITE_SIGNUP" :
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_INDEPTH );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_RIS );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+                                                break;
+
+                                            case "RIS" :
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_INDEPTH );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+
+                                                ## check to see if current user email in cludes in idfferent search type
+                                                $sendy->setListId( SENDY_LIST_SITE_SIGNUP );
+                                                $sendy_substatus = $sendy->substatus( $cc_email );
+                                                if( ! empty( $sendy_substatus["message"] ) && 'Subscribed' == $sendy_substatus["message"] ){
+
+                                                    $add_to_multiple_list = true;
+                                                    $sendy->unsubscribe( $cc_email );
+
+                                                }
+                                                break;
+
+                                            default :
+                                                break;
+
+                                        }
+
+                                    }
+
+                                }
+
+                                if ( $add_to_multiple_list ) {
+
+                                    $sendy->setListId( SENDY_LIST_MULTIPLE_SEARCHES );
+                                    $sendy->subscribe(array(
+                                        'email' => $cc_email,
+                                        "name" => ( ! empty( $cc_billing_firstname ) ? $cc_billing_firstname . " " : "" ) . ( ! empty( $cc_billing_lastname ) ? $cc_billing_lastname : "" )
+                                            
+                                    ));
+
+                                }
+
+                            }
+
+                        }
+
+                        if ( $user_data["membership_plan"] ) User::update( $user_id, [ "membership_plan" => null ] );
+                        $_SESSION["extract"]["success_messages"][] = "Thank you for your payment. Account upgraded.";                        
+                        //Todo: If there are any active same type subscriptions, cancel it.
+
+                    }
+
+                    $plan_data = [
+                        "membership_id" => $membership["id"],
+                        "search_type" => $cc_search_type,
+                        "payment_gateway" => $payment_gateway,
+                        "card_number" => ( ! empty( $cc_card_number ) ? str_repeat( "X", strlen( $cc_card_number ) - 4 ) . substr( $cc_card_number, -4 ) : "" ),
+                        "card_type" => ( ! empty( $card_type ) ? $card_type : "" ),
+                        "subscription" => ( $is_subscription ? 1 : 0 ),
+                        "subscriber_email" => ( ! empty( $cc_subscriber_email ) ? $cc_subscriber_email : "" ),
+                        "active" => ( $is_subscription ? 1 : 0 ),
+                        "next_payment" => "",
+                        "billing_firstname" => $cc_billing_firstname,
+                        "billing_lastname" => $cc_billing_lastname,
+                        "billing_address1" => ( ! empty( $cc_billing_address1 ) ? $cc_billing_address1 : "" ),
+                        "billing_address2" => ( ! empty( $cc_billing_address2 ) ? $cc_billing_address2 : "" ),
+                        "billing_country" => ( ! empty( $cc_billing_country ) ? $cc_billing_country : "" ),
+                        "billing_city" => ( ! empty( $cc_billing_city ) ? $cc_billing_city : "" ),
+                        "billing_state" => ( ! empty( $cc_billing_state ) ? $cc_billing_state : "" ),
+                        "billing_postal_code" => $cc_billing_postal_code,
+                        "billing_phone" => ( ! empty( $cc_billing_phone ) ? $cc_billing_phone : "" ),
+                        "date" => date( "Y-m-d H:i:s"),
+                        "from_plan" => ( ! empty( $token_session_data["delete_membership_id"] ) ? $token_session_data["delete_membership_id"] : NULL ),
+                        "associated_image_search" => ( ! empty( $token_session_data["associated_image_search"] ) ? $token_session_data["associated_image_search"] : NULL ),
+                        "associated_search_cache" => ( ! empty( $token_session_data["associated_search_cache"] ) ? $token_session_data["associated_search_cache"] : NULL ),
+                        "associated_search_person_cache" => ( ! empty( $token_session_data["associated_search_person_cache"] ) ? $token_session_data["associated_search_person_cache"] : NULL ),
+                    ];
+
+                    if ( $is_subscription && ! empty( $response_subscription ) ) {
+
+                        $plan_data = array_merge( $plan_data, [
+                            "subscription_profile" => ! empty( $subscription_profile_id ) ? $subscription_profile_id : "",
+                            "next_payment" => date( "Y-m-d", $start_subscription ),
+                        ] );
+
+                    }
+
+                    $plan_data["hash"] = md5( json_encode( $plan_data ) );
+
+                    // Ad Tracking
+                    if ( ! empty( $_SESSION["advertisement_data"]["source"] ) || ! empty( $_SESSION["advertisement_data"]["campaign"] ) ) {
+
+                        $plan_data["ref_source"] = $_SESSION["advertisement_data"]["source"];
+                        $plan_data["ref_campaign"] = $_SESSION["advertisement_data"]["campaign"];
+
+                    }
+
+                    // IF membership is a one time premium data request for a single search query
+                    if ( $membership["type"] == 'premium_data' || $membership["type"] == 'premium_data_monthly' ) {
+
+                        $premium_request_id = isset( $token_session_data["query_data"]['premium_request_id'] ) ? $token_session_data["query_data"]['premium_request_id'] : '';
+                        $plan_data["redirect_uri"] = isset( $token_session_data["query_data"]['redirect_uri'] ) ? $token_session_data["query_data"]['redirect_uri'] : '';
+                        $plan_data["custom_membership_reference"] = $premium_request_id;
+
+                        Search::update_premium_data_requests( $premium_request_id , 1 );
+
+                    }
+
+                    $plan_data["email"] = $cc_email;
+                    $plan_id = Membership::add_plan_to_user( $user_id, $plan_data );
+                    if( $plan_data["membership_id"] == PLAN_UNLIMITED_GENERAL_BOOSTED_ONETIME ) {
+                        $premium_data_id = Search::premium_data_request_log( $user_id , $person_id, 0 );
+                        Search::update_premium_data_requests( $premium_data_id , 1 );
+                    }
+
+                    //Check membership type to see if there are any pending subscription deletions
+                    if ( ! empty( $token_session_data["delete_membership_id"] ) && ! empty( $user_id ) ) {
+
+                        //Downgrade a user subscription by super admin
+                        $new_membership_userid = ( ! empty( $token_session_data["new_membership_userid"] ) && 255 == $user_data["user_level"] ) ? $token_session_data["new_membership_userid"] : $user_id;
+                        Membership::cancel_subscription( $new_membership_userid, $token_session_data["delete_membership_id"], "Downgraded or upgraded", $plan_id, $user_id );
+                        sleep( 1 );
+
+                    }
+
+                    //Cancel if there is any related duwngrade plan
+                    $auto_cancelled_downgraded_plan = false;              
+                    $new_membership_details = Membership::get( $plan_data["membership_id"] );
+                    if(! empty( $new_membership_details ) && ! empty( $new_membership_details["avoid_cancellation_alert"] ) && in_array( $new_membership_details["avoid_cancellation_alert"], ["avoid-cancel-regular", "avoid-cancel-ris"] ) ){
+
+                        $get_all_active_plans = Membership::get_user_plans( $user_id, true );
+                        if( ! empty( $get_all_active_plans ) )
+                        foreach ( $get_all_active_plans as $active_plan ){
+                            $old_membership_details = Membership::get( $active_plan['membership_id'] );
+                            
+                            if( ! empty( $old_membership_details ) && $old_membership_details['type'] == $new_membership_details["avoid_cancellation_alert"] ){
+                                $auto_cancelled_downgraded_plan = true;
+                                Membership::cancel_subscription( $user_id, $active_plan['id'], "Auto cancelled downgraded plan when upgrade", $plan_id, $user_id );
+                                sleep( 1 );
+                                
+                            }
+                        }
+
+                    }
+                    //die("ss");
+                    $_SESSION["combine_dashboard_popup"] = true;
+                    $combine_plan = false;
+
+                    $get_all_active_plans = Membership::get_user_plans( $user_id, true );
+                    foreach ( $get_all_active_plans as $active_plan ){
+                        if( $active_plan['membership_id'] == PLAN_UNLIMITED_5496 ){
+                            $combine_plan = true;
                             break;
                         }
                     }
-                    ?>
-                    <div class="box-col neighborhood-list">
-                        <div class="row">
-                            <div class="col-md-1 col-xs-3">
-                                <span class="si-user"></span>
-                            </div>
-                            <div class="col-md-3 col-xs-9">
-                                <h3><?php echo $data["full_name"]; ?></h3>
-                                <span class="title_lbl"><?php echo round(melissadata\MelissaDataRAS::twopoints_on_earth($property_info["lat"], $property_info["lng"], $data["latitude"], $data["longitude"]), 2); ?>
-                                    miles away</span>
-                            </div>
-                            <div class="col-md-4 col-xs-12">
-                                <h5>Charges Filed</h5>
-                                <span class="hd_text"><?php echo $data["record_id"] ?: "Undisclosed to Public"; ?></span>
-                            </div>
-                            <div class="col-md-4">
-                                <h5>Source</h5>
-                                <span class="hd_text"><?php echo $data["record_id"] ? "{$source}, {$data["state_name"]}" : "Undisclosed to Public"; ?></span>
-                            </div>
-                        </div>
-                        <div class="box-col neighborhood-list-inner">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="charge">Case ID</div>
-                                    <div class="charge_val"><?php echo $data["record_id"] ?: "Undisclosed to Public"; ?></div>
-                                </div>
-                                <div class="col-md-6 text-right">
-                                    <span class="btn btn-dark-green no-bckgrd-col" <?php SCF::js_controller("results.ras.view") ?>><span>View Details</span><i
-                                                class="si-down-circle"></i></span>
-                                </div>
-                            </div>
-                            <div class="neighborhood_content">
-                                <table class="scf-table">
-                                    <tr>
-                                        <td>Source</td>
-                                        <td><?php echo $data["record_id"] ? $source : "Undisclosed to Public"; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Source State</td>
-                                        <td><?php echo $data["source"]; ?></td>
-                                    </tr>
-                                </table>
-                                <h4 class="nbr_tbl_title">Personal Details</h4>
-                                <table class="scf-table">
-                                    <tr>
-                                        <td>Full Name</td>
-                                        <td><?php echo $data["full_name"]; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Age</td>
-                                        <td><?php echo ($data["dob"] && $data["dob"] != "1970-01-01") ? date_diff(date_create($data["dob"]), date_create(date()))->format("%Y") : "--"; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Date of Birth</td>
-                                        <td><?php echo ($data["dob"] && $data["dob"] != "1970-01-01") ? $data["dob"] : "Undisclosed to Public"; ?></td>
-                                    </tr>
-                                    <?php
-                                    $field_list = ["height" => "Height", "weight" => "Weight", "hair" => "Hair Color", "eyes" => "Eye Color", "race" => "Race", "address" => "Address", "latitude" => "Location", "personal" => "Identifying Marks", "vehicle" => "Vehicle"];
-                                    foreach ($field_list as $_key => $_caption) {
-                                        if (empty($data[$_key])) {
-                                            continue;
-                                        }
 
-                                        switch ($_key) {
-                                            case "height":
-                                                $value = "{$data[$_key][0]}' {$data[$_key][1]}{$data[$_key][2]}\"";
-                                                break;
+                    // Cancel old plans if user registered for combine plan
+                    if ( $combine_plan ){
+                        $cancelled_by_id = 999999997;
+                        foreach( $current_memberships as $row ){
+                            $cancel_old_subscription = Membership::cancel_subscription( $user_id, $row, "Registered for combine plan", $plan_id, $cancelled_by_id );
+                        }
+                        unset( $token_session_data["cancel_old_plan_if_combined"] );
+                        unset( $_SESSION["dashboard_addon_request"] );
+                        unset( $_SESSION["combine_dashboard_popup"] );
 
-                                            case "weight":
-                                                $value = $data[$_key] . (strpos($data[$_key], 'lbs') === false ? " lbs" : "");
-                                                break;
+                    }
 
-                                            case "latitude":
-                                                $value = sprintf('<a target="_blank" href="http://www.google.com/maps/place/%s,%s">%s, %s</a>', $data["latitude"], $data["longitude"], $data["latitude"], $data["longitude"]);
-                                                break;
+                    if ( $payment_method == "amazonpay" ){
 
-                                            default:
-                                                $value = $data[$_key];
-                                        }
-                                        ?>
-                                        <tr>
-                                            <td><?php echo $_caption ?></td>
-                                            <td><?php echo $value; ?></td>
-                                        </tr>
-                                        <?php
+                        $amazon_pay_cron_data = [
+                            "plan"	=>	$plan_id,
+                            "last_payment_amount"	=>	$membership["initial_amount"],
+                            "last_payment_date"	=>	date( "Y-m-d" ),
+                            "last_payment_status"	=>	empty( $payment_error ) ? 1 : 0,
+                            "next_retry_date"	=> date( "Y-m-d", $start_subscription ),
+                            "next_charge_amount"	=> ! empty( $membership["recurring_amount"] ) ? $membership["recurring_amount"] : null,
+                            "is_subscription"	=>	$is_subscription ? 1 : 0,
+                            "last_payment_type"	=>	$is_subscription ? ( $membership["start_recurring_frequency"] > 0 ? "trial" : "initial"  ) : "initial",
+                            "payment_tracking_data_id"	=>	! empty( $payment_tracking_data_id ) ? $payment_tracking_data_id : ""
+                        ];
+
+                        Membership::add_amazon_pay_cron_data( $amazon_pay_cron_data );
+
+                    }
+
+                    Membership::add_payment( $plan_id, [
+                    	"email" => $cc_email,
+                        "amount" => $membership["initial_amount"],
+                        "txn_id" => ! empty( $transaction_id ) ? $transaction_id : "",
+                        "date" => date("Y-m-d H:i:s"),
+                    ] );
+
+                    $membership_tokens = Membership::get_tokens( $membership );
+                    if ( $membership["one_search_type"] ) {
+
+                        $search_type = $search_types[ $cc_search_type ];
+                        User::add_remove_tokens( $user_id, [
+                            $search_type => $membership_tokens[ $search_type ],
+                        ] );
+
+                        if ( ! empty( $_SESSION["search_params"] ) ) {
+
+                            $_SESSION["extract"]["search_params"] = $_SESSION["search_params"];
+                            $membership["redirect_url"] = "search.html";
+
+                        }
+
+                    } else {
+
+                        $method_of_add_remove_tokens = $auto_cancelled_downgraded_plan ? "reset" : "add";
+                        User::add_remove_tokens( $user_id, $membership_tokens, $method_of_add_remove_tokens );
+                        
+                    }
+
+                    if ( ! empty( $reduce_image_token ) ) {
+
+                        User::add_remove_tokens( $user_id, [
+                            "image" => 1
+                            ], "remove" );
+
+                    }
+
+                    $cancelled_by_id = 999999996;
+                    //cancel paused plans
+                    $pause_regular30_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_30DAYS ] ) ? true : false;
+                    $pause_regular60_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_60DAYS ] ) ? true : false;
+                    $pause_regular90_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_90DAYS ] ) ? true : false;
+
+                    if( $membership["id"] == PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL ){
+
+                        if( $pause_regular30_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_30DAYS ], "", null, $cancelled_by_id );
+                        if( $pause_regular60_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_60DAYS ], "", null, $cancelled_by_id );
+                        if( $pause_regular90_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_90DAYS ], "", null, $cancelled_by_id );
+
+                    }
+
+                    $pause_ris30_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_RIS_30DAYS ] ) ? true : false;
+                    $pause_ris60_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_RIS_60DAYS ] ) ? true : false;
+                    $pause_ris90_is_active = ! empty( $active_memberships[ PLAN_AVOID_PAUSE_RIS_90DAYS ] ) ? true : false;
+
+                    if( $membership["id"] == PLAN_UNLIMITED_IMAGE_5_DAY_TRIAL ){
+
+                        if( $pause_ris30_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_30DAYS ], "", null, $cancelled_by_id );
+                        if( $pause_ris60_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_60DAYS ], "", null, $cancelled_by_id );
+                        if( $pause_ris90_is_active ) Membership::cancel_subscription( $user_id, $active_memberships[ PLAN_AVOID_PAUSE_REGULAR_90DAYS ], "", null, $cancelled_by_id );
+
+                    }
+                    //PLAN_AVOID_PAUSE_REGULAR_30DAYS
+
+                    if ( true) {
+
+                        $related_memberships = "a different type of search that is not include in this plan";
+                        if( ! empty( $membership["related_membership_ids"] ) ){
+
+                            $_related_memberships = [];
+                            $related_membership_ids = explode(",", $membership["related_membership_ids"]);
+                            if( ! empty( $related_membership_ids ) ){
+
+                                foreach( $related_membership_ids as $relm_k =>  $related_membership_id ){
+
+                                    $related_membership = Membership::get( $related_membership_id );
+                                    if( ! empty( $related_membership ) ){
+
+                                        $_related_memberships[] = $related_membership["title"];
+
                                     }
-                                    ?>
-                                </table>
-                                <h4 class="nbr_tbl_title">Charges filed</h4>
-                                <table class="scf-table">
-                                    <tr>
-                                        <td>Offence information</td>
-                                        <td><?php echo $data["crime"] ?: "Undisclosed to Public"; ?></td>
-                                    </tr>
-                                    <?php
-                                    $field_list = ["type" => "Type", "sentence" => "Sentence", "last_update" => "Last Update"];
-                                    foreach ($field_list as $_key => $_caption) {
-                                        if (empty($data[$_key])) {
-                                            continue;
-                                        }
-                                        ?>
-                                        <tr>
-                                            <td><?php echo $_caption ?></td>
-                                            <td><?php echo $data[$_key]; ?></td>
-                                        </tr>
-                                        <?php
-                                    }
-                                    ?>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <?php
+
+                                }
+
+                                $related_memberships = "'" . implode("' or '", $_related_memberships) . "'";
+
+                            }
+
+                        }
+
+                        $welcome_confirmation_template = "welcome-confirmation";
+                        if ( PLAN_PREMIUM_DATA == $membership["id"] ) $welcome_confirmation_template = "welcome-confirmation-premiumdata";
+                        elseif( PLAN_PREMIUM_DATA_MONTHLY == $membership["id"] ) $welcome_confirmation_template = "welcome-confirmation-premiumdata-monthly";
+                        elseif( PLAN_RIS_BOOSTED_UNLIMITED == $membership["id"] ) $welcome_confirmation_template = "welcome-boosted-unlimited";
+                        elseif( PLAN_DR_PHIL_TRIAL_PLAN == $membership["id"] ) $welcome_confirmation_template = "welcome-confirmation-dr-phil-free";
+                        elseif( PLAN_CRIMINAL_REPORT == $membership["id"] || PLAN_CRIMINAL_RECORDS_ADDON == $membership["id"] ) $welcome_confirmation_template = "welcome-confirmation-criminal-records"; 
+
+                       if($membership["recurring_frequency"]  == 1){
+                        // Send Welcome/Confirmation Email
+                        $email_template_data = SCF::get_mail_template( $welcome_confirmation_template, [
+                            "membership_title" => $membership["title"],
+                            "transaction_id" => $transaction_id,
+                            "date" => SCF::tz_convert( time(), "F d, Y" ),
+                            "account" => $cc_email,
+                            "initial_amount" => $membership["initial_amount"],
+                            "recurring_amount" => $membership["recurring_amount"],
+                            "start_recurring_frequency" => $membership["start_recurring_frequency"],
+                            "start_recurring_date" => SCF::tz_convert( $start_subscription, "F d, Y" ),
+                            "start_recurring_period" => $membership["start_recurring_period"],
+                            "related_memberships_text" => $related_memberships,
+                            "email" => $cc_email,
+                            "title" =>  "SocialCatfish Membership Information"
+
+                        ]);
+
+                        $mailer = SCF::get_mailer();
+                        $mailer->addAddress( $cc_email, "{$cc_billing_firstname} {$cc_billing_lastname}" );
+                        $mailer->Subject = "SocialCatfish Membership Information";
+                        $mailer->msgHTML( $email_template_data["html"] );
+                        $mailer->AltBody = $email_template_data["text"];
+                        $mailer->send();
+                    }
+
+                        if ( preg_match( "/^avoid-cancel|avoid_pause/i", $membership["type"] ) ) {
+
+                            if ( preg_match( "/^avoid-cancel/i", $membership["type"] ) ) {
+
+                                $email_title_cancel_alternative = "SocialCatfish Membership Downgraded";
+
+                                $email_template_data = SCF::get_mail_template( "cancel-alternative-downgrade-to-essentials", [
+                                    "subscription_amount" => ( preg_match( "/trial/i", $membership["type"] ) ? "9.99" : "9.99" ),
+                                    "title" => $email_title_cancel_alternative,
+                                    "email" =>  $cc_email
+                                ] );
+
+                            } else if( preg_match( "/^avoid_pause/i", $membership["type"] ) ){
+
+                                $email_title_cancel_alternative = "SocialCatfish Membership Paused";
+                                $email_template_data = SCF::get_mail_template( "cancel-alternative-paused", [
+                                    "break_period" => $membership["start_recurring_frequency"],
+                                    "title" => $email_title_cancel_alternative,
+                                    "email" =>  $cc_email
+                                ] );
+                            }
+
+                            $mailer = SCF::get_mailer();
+                            $mailer->addAddress( $cc_email, "{$cc_billing_firstname} {$cc_billing_lastname}" );
+                            $mailer->addBCC( "ruwan@socialcatfish.com", "SocialCatfish" );
+                            $mailer->Subject = $email_title_cancel_alternative;
+                            $mailer->msgHTML( $email_template_data["html"] );
+                            $mailer->AltBody = $email_template_data["text"];
+                            $mailer->send();
+
+                        }
+
+                        // Notification Email for investigator
+                        if ( IN_DEPTH_SEARCH_MEMBERSHIP_ID_NEW == $membership["id"] ) {
+
+                            if( empty( $cc_email ) ) $cc_email = ! empty( $post_data["email"] ) ? $post_data["email"] : "";
+                            if( empty( $cc_billing_phone ) ) $cc_billing_phone = ! empty( $post_data["billing_phone"] ) ? $post_data["billing_phone"] :  $_SESSION["specialist_number"];
+                            if( empty( $cc_billing_firstname ) ) $cc_billing_firstname = ! empty( $post_data["billing_firstname"] ) ? $post_data["billing_firstname"] : "";
+                            if( empty( $cc_billing_lastname ) ) $cc_billing_lastname = ! empty( $post_data["billing_lastname"] ) ? $post_data["billing_lastname"] : "";
+
+                            $email_template_data = SCF::get_mail_template( "new-indepth-notification", [
+                                "membership_title" => $membership["title"],
+                                "transaction_id" => $transaction_id,
+                                "date" => SCF::tz_convert( time(), "F d, Y" ),
+                                "account" => $cc_email,
+                                "billing_phone" => ( ! empty ( $cc_billing_phone )? $cc_billing_phone :  $_SESSION["specialist_number"] ),
+                                "billing_firstname" => $cc_billing_firstname,
+                                "billing_lastname" => $cc_billing_lastname,
+                            ]);
+                            $mailer = SCF::get_mailer();
+
+                            $mailer->addAddress( "investigator@socialcatfish.com", "Socialcatfish Investigator" );
+                            $mailer->addAddress( "investigations@socialcatfish.com", "Breanne McClellan" );
+                            $mailer->Subject = "New SocialCatfish In-Depth Search";
+                            $mailer->msgHTML( $email_template_data["html"] );
+                            $mailer->AltBody = $email_template_data["text"];
+                            $mailer->send();
+
+                            //Email notification to user
+                            $email_template_data_indepth = SCF::get_mail_template( "indepth-register", [
+                                "title" =>  "Welcome to Social Catfish's Search Specialist Service!",
+                                "email" =>  $cc_email
+                            ] );
+                            $mailer_indepth = SCF::get_mailer();
+                            $mailer_indepth->addAddress( $cc_email, "Socialcatfish User" );
+                            $mailer_indepth->Subject = "Welcome to Social Catfish's Search Specialist Service!";
+                            $mailer_indepth->msgHTML( $email_template_data_indepth["html"] );
+                            $mailer_indepth->AltBody = $email_template_data_indepth["text"];
+                            $mailer_indepth->send();
+
+                        }
+
+                    }
+
+                    if ( ! $testcase_is_running ) {
+
+                        // Set Google eCommerce Tracking
+                        $_SESSION["extract"]["gtm_events"]["conversion"] = [
+                            "transactionId" => $plan_id,
+                            "transactionAffiliation" => 'SocialCarfish.com' . ( ! empty( $_SESSION["advertisement_data"] ) ? " ({$_SESSION["advertisement_data"]["source"]})" : "" ) . " - {$payment_gateway}",
+                            "transactionTotal" => (float) $membership["initial_amount"],
+                            "transactionProducts" => [
+                                [
+                                    "name" => $membership["title"],
+                                    "sku" => $membership["id"],
+                                    "price" => $membership["initial_amount"],
+                                    "quantity" => 1,
+                                ],
+                            ],
+                            "event" => "conversion",
+                        ];
+
+                        FacebookConversionsAPI::puchase_event($payment_tracking_data["amount"],$payment_tracking_data["email"],$plan_id);
+
+                    }
+                    // Assign search data to user
+                    if ( ! empty( $token_session_data["add_search"] ) ) {
+
+                        $search_id = Search::add_search_to_user( $user_id, $plan_id, $token_session_data["add_search"],$user_data["user_level"] );
+                        //Run billable crim search IDI API call after user purchases report
+                         $full_name_arr = explode( " ", $token_session_data["add_search"]["data"]["full_name"] );
+                            $last_name = array_pop( $full_name_arr );
+                            $first_name = reset($full_name_arr);
+                
+                            $params =  [
+                                "first_name" => $first_name,
+                                "last_name" => $last_name,
+                                "state" => $token_session_data["add_search"]["data"]["state"],               
+                                "search_type" => "CriminalSearch",
+                                "fields" => '["criminal"]',
+                                "dob" => $token_session_data["add_search"]["data"]["dob"],];
+                           
+                            // Fetch Records from the API            
+                            $ds_idi = new \DataSource\IDI( IDI_CLIENT_ID, IDI_SECRET_KEY, DEBUG );
+                            $records = $ds_idi->runSearch( $ds_idi->mapParams( $params ) );  
+                    }
+                    if ($_SESSION["add_cr_to_new_user"]) {
+                        CriminalRecords::update_user_search( $user_id,$plan_id, $_SESSION["cr_id"]);
+                        unset($_SESSION["add_cr_to_new_user"]);
+                        
+                    }
+
+                    //if privacy lock activated
+                    if( $privacy_lock_activated ) PWNED::save_user_pawned_data( $cc_email );
+
+                    // Thank you page data
+                    $_SESSION["thankyou_page_data"] = $plan_data;
+                    $_SESSION["thankyou_page_data"]["txn_id"] = $transaction_id;
+                    $_SESSION["thankyou_page_data"]["session"] = $_SESSION["tokens"][ $token ];
+                    $_SESSION["thankyou_page_data"]["session"]["membership"] = $membership;
+                    $_SESSION["thankyou_page_data"]["redirect_url"] = $_SESSION["redirect_link"];
+
+                    unset( $_SESSION["tokens"][ $token ], $_SESSION["search_params"] );
+                    unset( $_SESSION["regular_premium_combine"] );
+
+                    if($membership["id"] == PLAN_CRIMINAL_RECORDS_ADDON){
+                        $membership["redirect_url"] = "criminal_report/{hash}/";
+                    }
+
+                    //Running RAS for users who purchase sunbscription through RAS Landingg page
+                    if(!empty($_SESSION["ras_data"]) ){
+                        $user_data["tokens_address"] = 10000;
+                        $msd= new melissadata\MelissaDataRAS(MELISSADATA_API_KEY);
+                        $results = $msd->search_address($_SESSION["ras_data"]["address"],$_SESSION["ras_data"]["city"],$_SESSION["ras_data"]["state"],$_SESSION["ras_data"]["state"],$_SESSION["ras_data"]["lat"],$_SESSION["ras_data"]["lng"]);
+                        $membership["redirect_url"] = "ras_report/?id=".$results;
+                        unset($_SESSION["ras_data"]);
+
+                    }
+
+                    if ( PLAN_RIS_BOOSTED_ONETIME == $membership["id"] ) {
+
+                        Search::ris_boost_search( $token_session_data["hash"] );
+
+                    } elseif ( PLAN_RIS_BOOSTED_UNLIMITED == $membership["id"] ) {
+
+                        Search::ris_rerun_search( $token_session_data["hash"] );
+
+                    }
+
+                    // Membership Redirection URL
+                    if ( $membership["redirect_url"] ) {
+                        if ( PLAN_CRIMINAL_REPORT == $membership["id"] || $membership["id"] == PLAN_CRIMINAL_RECORDS_ADDON) {
+                            $hash_replacement = SYSTEM::sanitize( $query_data["name"] ) . "-{$search_id}";
+                            $button_caption = "View Criminal Records Now";
+                        } elseif ( "premium_data" == $membership["type"] || "premium_data_monthly" == $membership["type"] ) {
+
+                            $pid = [ $_SESSION["premium_data"]["pid"] ];                                
+                            $params =  [
+                                "pidlist" => $pid];                               
+                            // Fetch Records from the API            
+                            $ds_idi = new \DataSource\IDI( IDI_CLIENT_ID, IDI_SECRET_KEY, DEBUG );
+                            $records = $ds_idi->runSearch( $ds_idi->mapParams( $params ),true,true ); 
+                            search::insert_idi_premium_data($_SESSION["premium_data"]["cache_id"],$records["data"][0]);
+                            unset( $_SESSION["premium_data"]);
+                            // AB tracking for premium upsell data
+                            // if (isset($_SESSION["ab_premium_upsell"])) {
+                            //     $_SESSION["ab_premium_upsell"]->track_event("conversion", $device);
+                            // }
+
+                            $hash_replacement = $plan_data["redirect_uri"];
+                            $button_caption = "View Premium Data Now";
+
+                        } elseif ( ! empty( $token_session_data["hash"] ) ) {
+
+                            $hash_replacement = $token_session_data["hash"];
+
+                        } else {
+
+                            $hash_replacement = $plan_data["hash"];
+                            $button_caption = "Start Running Searches Now";
+
+                        }
+
+                        $_SESSION["thankyou_page_data"]["redirect_url"] = RELATIVE_URL . str_replace( "{hash}", $hash_replacement, $membership["redirect_url"] );
+                        $_SESSION["thankyou_page_data"]["button_caption"] = $button_caption;
+                    }
+
+                    // Disable the FB Group Popup for In-Depth Users
+                    if ( MEMBERSHIP_CATEGORY_HIRE_US == $membership["category"] ) {
+
+                        User::set_meta( $user_id, 'disable_fb_group_popup', 1 );
+                        $_SESSION["user"]["disable_fb_group_popup"] = 1;
+
+                    }
+
+                    if( ! empty( $amazon_pay_ab_test ) ){
+
+                        if( $payment_gateway == "amazonpay" ) $amazon_pay_ab_test->track_event("conversion_amazon_pay");
+                        else $amazon_pay_ab_test->track_event("conversion");
+
+                    }
+
+                    SYSTEM::redirect( PAGE_URL_DASHBOARD );
+
                 }
-                ?>
-            </div>
-            <?php
+
+                if ( empty( $redirect ) ) $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+                SYSTEM::redirect( $redirect );
+
+            } else {
+                $error_messages = array_slice( $error_messages, 0, 1 );
+                Behavior::system_log_action( __FILE__, __LINE__, __METHOD__, "Checkout Error::{$error_messages}", ["errors", "checkout error", "{$error_messages}" ] );
+            }
+
+        } else {
+
+            $fields = SYSTEM::array_get_value_from_multi_array_by_key( $form_validation, "name" );
+            $post_data = array_merge( $post_data, SYSTEM::array_get_values_for_keys( $token_session_data, $fields ) );
+
+            // Test Data
+            if ( DEBUG && ( "new.socialcatfish.com" == $_SERVER["HTTP_HOST"] || 81 == $_SERVER["SERVER_PORT"] ) && empty( $post_data["card_name"] ) ) {
+
+                $random_user = json_decode( file_get_contents( "https://randomuser.me/api/?nat=us" ), true )["results"][0];
+                $post_data["card_name"] = ucwords( "{$random_user["name"]["first"]} {$random_user["name"]["last"]}" );
+                $post_data["billing_firstname"] = ucwords( $random_user["name"]["first"] );
+                $post_data["billing_lastname"] = ucwords( $random_user["name"]["last"] );
+                $post_data["email"] = $random_user["email"];
+                $post_data["email_confirm"] = $random_user["email"];
+                $post_data["card_number"] = ( PAYMENT_GATEWAY_DEFAULT != "usaepay" ) ? "4111111111111111" : "4000100011112224";
+                $post_data["card_cvv"] = "111";
+                $post_data["card_expiry_month"] = sprintf( "%02f", rand( 1, 12 ) );
+                $post_data["card_expiry_year"] = rand( date("Y") + 1, date("Y") + 5 );
+                $post_data["billing_address1"] = "{$random_user["location"]["street"]["number"]} {$random_user["location"]["street"]["name"]}";
+                $post_data["billing_address2"] = "";
+                $post_data["billing_city"] = ucwords( $random_user["location"]["city"] );
+                $post_data["billing_postal_code"] = ucwords( $random_user["location"]["postcode"] );
+                $post_data["billing_state"] = ucwords( $random_user["location"]["state"] );
+
+                if ( ! empty( $membership["show_phone_number"] ) ) {
+
+                    $post_data["billing_phone"] = "2012001234";
+
+                }
+
+            }
+
         }
-        ?>
-    </div>
-</div>
+
+    } else {
+
+        $page_title = "Membership Levels | People Search - SocialCatfish.com";
+        $page_description = "Find or verify someone using just an image Find out information about someone with just their name Locate online social profiles (dating profiles, social profiles and work profiles) Get access to criminal records* Find out who lives at an address Verify a business Find out who owns an email Find out who owns a phone &hellip;";
+        $sub_page = ( "custom" != $action ) ? ( $_SESSION["price_changed"] ? "register/info-ab.php" : "register/info.php" ) : "register/custom.php";
+        $section = $section ?: "initial";
+
+        // 99 cents promo plan
+        $section = ( ! empty( $promo ) && "99cents" == $promo ) ? "promo" : $section;
+
+        // Black Friday Promo plans cents promo plan
+        $section = ( ! empty( $promo ) && ( "black-friday-2020-all-unlimited" == $promo || "black-friday-2020-all-350" == $promo ) ) ? "black-friday-2020" : $section;
+
+        $_SERVER["HTTP_REFERER"] = ( ! empty( $_SERVER["HTTP_REFERER"] ) ) ? $_SERVER["HTTP_REFERER"] : "";
+        if ( "initial" == $section && $user_has_search_tokens ) $section = "initial";
+        elseif ( "ris" == $section && $user_has_image_tokens ) $section = "initial";
+        elseif ( "upgrade" == $section && empty( $user_id ) ) SYSTEM::redirect( RELATIVE_URL );
+        elseif ( "upgrade" == $section ) $section = "initial";
+
+        //if ( 'upgrade' == $section ) $sub_page = "register/customize.php";
+
+        if ( "phone_teaser" == $section ) {
+
+            if ( $user_id ) SYSTEM::redirect( PAGE_URL_REVERSE_PHONE_SEARCH );
+            if ( ! $phone_info = AreaCode::phone_number_info( $search_keyword ) ) {
+
+                $module = "404";
+                include_once( MODULES_PATH . "404.php" );
+
+            } else {
+
+                $query_data = [
+                    "name" => $search_keyword,
+                    "partial_locations" => [ "{$phone_info["city"]}, {$phone_info["state"]}" ],
+                    "phone_provider" => "{$phone_info["carrier"]} ({$phone_info["line_type"]})",
+                ];
+
+            }
+
+            $section = "initial";
+
+        }
+
+        if (strpos($section, 'reset_member_plan_') === 0) {
+
+            $membership_levels = [ Membership::get( str_replace("reset_member_plan_", "", $section ) ) ];
+
+        } else if( ! empty( $load_plan ) ){
+
+            $membership_levels = [ Membership::get( $load_plan ) ];
+
+        } else {
+
+            $membership_levels = Membership::get_membership_levels( $section );
+
+        }
+
+
+        //Showing RIS membenrship level in standard membership level page by request
+        if ( $section == "initial" && empty( $search_params["sid"] ) && empty( $search_params["person_id"] ) ) {
+
+            $membership_levels_ris = Membership::get_membership_levels( 'ris' );
+            // $membership_levels_ris[0]["default"] = 0;
+            $membership_levels = array_merge( array_slice( $membership_levels, 0, 1 ) , $membership_levels_ris, array_slice( $membership_levels, 1 ) );
+
+        }
+
+        if( ! empty( $promo ) && ( "black-friday-2020-all-unlimited" == $promo || "black-friday-2020-all-350" == $promo ) ){
+            if( "black-friday-2020-all-unlimited" == $promo ) $promo_id = PLAN_BLACK_2020_FRIDAY_ALL_UNLIMITED;
+            if( "black-friday-2020-all-350" == $promo ) $promo_id = PLAN_BLACK_2020_FRIDAY_ALL_350;
+
+            foreach( $membership_levels as $levels => $level ){
+
+                if( $level["id"] <> $promo_id ) unset( $membership_levels[ $levels ] );
+
+            }
+
+            //CSI-6653 - special approval for a user to create black friday plan after offer ends
+            //Must remove this if after the user completed his purchase
+            if( ! empty( $user_data["email"] ) && ! in_array( $user_data["email"], ["jhaney@ualberta.ca", "asdasd@appearen.com", "asitha@socialcatfish.com"])){
+                //Already registered users cannot purchase this offer
+                if( $user_id ) SYSTEM::redirect( PAGE_URL_DASHBOARD );
+            } else if( empty( $user_id ) ){
+                SYSTEM::redirect( RELATIVE_URL );
+            }
+            
+
+        }
+
+        foreach( $membership_levels as $levels => $level ) {
+
+            if ( $level["id"] == PLAN_UNLIMITED_MONTHLY_1 ) unset( $membership_levels[ $levels ] );
+
+        }
+
+        if( ! empty( $_SESSION["plan_1_99"] ) ){
+
+            $membership_levels = [ Membership::get( PLAN_RIS_1_99 ) ];
+
+        }
+
+        $validated_mobile_app_user = false;
+        if( $is_mobile_app || ! empty( $_SESSION["mobile_app_user"] ) ){
+            //validate session  and key with sent email
+            //$is_mobile_app_key
+            //$is_mobile_app_session
+            //$is_mobile_app_email
+
+            $validated_mobile_app_user = true;
+            if( ( ! empty( $is_mobile_app_email ) && $validated_mobile_app_user ) || ! empty( $_SESSION["mobile_app_user"] ) ) {
+
+                if( ! empty( $_SESSION["mobile_app_user"] ) ) $user_data = User::get_by_id( $_SESSION["mobile_app_user"] );
+                else $user_data = User::get_by_email( $is_mobile_app_email );
+                if( ! empty( $user_data ) && ! empty( $user_data["id"] ) ){
+                    $user_id = $user_data["id"];
+                    $_SESSION["mobile_app_user"] = $user_data["id"];
+                    $user_data["walkthrough"] = 0;
+                    $membership_levels = [ Membership::get( $is_mobile_app_plan_id ) ];
+
+                }
+            }
+
+            if( $is_mobile_app_plan_id == PLAN_PREMIUM_DATA ){
+                $premium_requested = Search::premium_data_request_log( $user_id , $is_mobile_app_person_id, 0 );
+
+                $query_data['premium_request_id'] = $is_mobile_app_person_id;
+                $query_data = [
+                    "type_id" => 2,
+                    'premium_request_id' => $premium_requested,
+                    'premium_monthly' => 0,
+                    //'redirect_uri' => "",
+                    //"query" => "david",
+                    "name" => $is_mobile_app_person_name,
+                   // "age" => "10",
+                    //"image" => "",
+                    //"location" => "loc",
+                ];
+            }
+
+            $mobile_app = true;
+            $exclude_header_footer_content = true;
+        }
+
+
+        // Gray out for logged in user membership plans
+        if ( $user_id ) {
+
+            $default_plan = false;
+            foreach ( $membership_levels as &$_plan ) {
+
+                if ( $_plan["purchased"] = ( ( ! empty( $active_memberships[ $_plan["id"] ] ) || ! empty( $active_memberships[ PLAN_UNLIMITED_3999 ] ) || ! empty( $active_memberships[ PLAN_UNLIMITED_3999_5_DAY_TRIAL ] ) ) && $_plan["id"] != IN_DEPTH_SEARCH_MEMBERSHIP_ID_NEW ) ? 1 : 0 ) $_plan["default"] = 0;
+                elseif ( ! $default_plan ) {
+
+                    $default_plan = true;
+                    $_plan["default"] = 1;
+
+                }
+
+            }
+            unset( $_plan );
+
+        }
+
+
+        $max_features_count = 0;
+        foreach ( $membership_levels as $index => $membership_level ) {
+
+            if( ! empty( $active_memberships[ PLAN_DR_PHIL_SPECIAL_OFFER ] ) && in_array( $membership_level["id"], [ PLAN_UNLIMITED_IMAGE_5_DAY_TRIAL, PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL ] ) ){
+                unset( $membership_levels[ $index ] );
+                continue;
+            }
+
+
+            if( ! empty( $active_memberships[ PLAN_UNLIMITED_IMAGE_SWITCHED ] ) && $membership_level["id"] == PLAN_UNLIMITED_IMAGE_5_DAY_TRIAL ){
+                $membership_levels[ $index ]["purchased"] = 1;
+            }
+
+            if( ! empty( $active_memberships[ PLAN_UNLIMITED_GENERAL_SWITCHED ] ) && $membership_level["id"] == PLAN_UNLIMITED_GENERAL_5_DAY_TRIAL ){
+                $membership_levels[ $index ]["purchased"] = 1;
+            }
+
+            //avoid duplicate signups for selected membership plans
+            //if( $membership_level['avoid_duplicate_signups'] && in_array( $membership_level['id'], $active_memberships ) ) unset( $membership_levels[ $index ] );
+
+            if ( ( "initial" == $section || "ris" == $section ) && ! empty( $_SESSION["hide_none_ad_memberships"] ) && $membership_level["hide_for_ads"] ) {
+
+                unset( $membership_levels[ $index ] );
+                continue;
+
+            }
+            if ( count( $membership_level["features"] ) > $max_features_count ) $max_features_count = count( $membership_level["features"] );
+
+        }
+
+        ## New membership plans not available for this user/member.
+        if( empty( $membership_levels ) )
+            if ( $user_id ) SYSTEM::redirect( PAGE_URL_DASHBOARD );
+            else SYSTEM::redirect( RELATIVE_URL );
+
+        $plan_count = count( $membership_levels );
+        $plan_bootstrap_width = $plan_count ? intval( 12 / $plan_count ) : 12;
+
+        $search_type_id = ! empty( $query_data["type_id"] ) ? $query_data["type_id"] : "";
+
+        if ( ! empty( $_SESSION["image_token"][ $token ] ) ) {
+
+            $image_search_data = $_SESSION["image_token"][ $token ];
+            unset( $_SESSION["image_token"][ $token ] );
+
+        } else {
+
+            $token = md5( time() * rand( 100, 200 ) );
+            $image_search_data = [];
+
+        }
+
+        $_SESSION["tokens"][ $token ] = [
+            "section" => $section,
+            "search_type" => $search_type_id,
+            "current_step" => 1,
+            "image_search_data" => $image_search_data,
+            "query_data" => ( ! empty( $query_data ) ) ? $query_data : [],
+            "delete_membership_id" => ( ! empty( $delete_membership_id ) ) ? $delete_membership_id : "",
+            "new_membership_userid" => ( ! empty( $delete_membership_userid ) ) ? $delete_membership_userid : "",
+        ];
+        $token_session_data =& $_SESSION["tokens"][ $token ];
+
+        $cart_progress_data = [];
+        if( ! empty( $query_data['premium_request_id'] ) ){
+
+            $cart_progress_data['search_type'] = "premiumdata";
+            $cart_progress_data['search_reference']['person_id'] = $query_data['premium_request_id'];
+
+        }
+
+        User::log_user_cart_progress( $token, $cart_progress_data );
+
+        if ( empty( $token_session_data["membership_id"] ) ) {
+
+
+            if ( ! empty( $id ) && ( $membership = Membership::get( $id ) ) ) {
+                $token_session_data["membership_id"] = $id;
+                $token_session_data["membership"] = $membership;
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+                SYSTEM::redirect( $redirect );
+            }
+            // } else $redirect = RELATIVE_URL;
+
+
+        }
+
+        if ( ! empty( $user_id ) ) {
+
+            $token_session_data["billing_address1"] = $user_data["address_1"];
+            $token_session_data["billing_address2"] = $user_data["address_2"];
+            $token_session_data["billing_city"] = $user_data["city"];
+            $token_session_data["billing_state"] = $user_data["state"];
+            $token_session_data["billing_postal_code"] = $user_data["postal_code"];
+            $token_session_data["billing_country"] = $user_data["country"];
+
+        }
+
+        if ( ( ! empty( $query_data ) || $image_search_data ) ) {
+
+            if ( count( $membership_levels ) > 1 ) {
+
+            	$membership_levels = [ ( "initial" == $section ) ? Membership::get( PLAN_UNLIMITED_3_DAY_SS ) : ( ( "ris" == $section ) ? Membership::get( PLAN_UNLIMITED_3_DAY_RIS ) : array_shift( $membership_levels ) ) ];
+
+			}
+            $token_session_data["current_step"] = 1;
+            $query_data = $token_session_data["query_data"];
+
+        }
+
+        if ( count( $membership_levels ) == 1 ) {
+
+            $membership = array_shift( $membership_levels );
+            $token_session_data["membership_id"] = $membership["id"];
+            $token_session_data["membership"] = $membership;
+
+            if ( preg_match( "/^reset_member_plan_|avoid-cancel|black-friday|avoid_pause|premium_data|switched_but/i", $token_session_data["section"] ) ) {
+
+                $redirect = RELATIVE_URL . "membership-levels/?token={$token}";
+                SYSTEM::redirect( $redirect );
+
+            }
+
+            $direct_token = $token;
+            include( MODULES_PATH . "register.php" );
+
+        }
+
+        if( ! empty( $dashboard_membership_addon_request ) ){
+            $redirect = RELATIVE_URL . "membership-levels/?token={$token}&dashboard_membership_addon_request={$dashboard_membership_addon_request}";
+            SYSTEM::redirect( $redirect );
+
+        }
+
+    }
+
+    if( $settings["indepth_waiting_list"] == "1" && $membership["id"] == IN_DEPTH_SEARCH_MEMBERSHIP_ID_NEW ) SYSTEM::redirect( BASE_URL . "search-specialist-waitlist/" );
+
+    if ($membership["id"] == IN_DEPTH_SEARCH_MEMBERSHIP_ID_NEW ) $include_popup[] = "phone_required";
