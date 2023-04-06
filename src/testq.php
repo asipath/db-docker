@@ -172,9 +172,11 @@ if ("name_update" == $section) {
                 if (strtotime($v["created"]) < strtotime('-20 days')) {
                     $pwned_lastmonth = PWNED::is_pwned_within_last_month($v["id"]);
                     if (! empty($pwned_lastmonth)) {
-                        $email_template_data = SCF::get_mail_template("override_template_privacy_lock_issue_found_monthly", [
+                        $email_template_data = SCF::get_mail_template(
+                            "override_template_privacy_lock_issue_found_monthly", [
                             "User" => "{$v["first_name"]} {$v["last_name"]}",
-                        ]);
+                            ]
+                        );
 
                         $mailer = SCF::get_mailer();
                         $mailer->addAddress($v["email"], "{$v["first_name"]} {$v["last_name"]}");
@@ -183,9 +185,11 @@ if ("name_update" == $section) {
                         $mailer->AltBody = $email_template_data["text"];
                         $mailer->send();
                     } else {
-                        $email_template_data = SCF::get_mail_template("override_template_privacy_lock_no_issue_found_monthly", [
+                        $email_template_data = SCF::get_mail_template(
+                            "override_template_privacy_lock_no_issue_found_monthly", [
                             "User" => "{$v["first_name"]} {$v["last_name"]}",
-                        ]);
+                            ]
+                        );
 
                         $mailer = SCF::get_mailer();
                         $mailer->addAddress($v["email"], "{$v["first_name"]} {$v["last_name"]}");
@@ -199,9 +203,11 @@ if ("name_update" == $section) {
 
 
             if ($v["created"] == date('Y-m-d', strtotime('-2 days'))) {
-                $email_template_data = SCF::get_mail_template("override_template_privacy_lock_2days_after_signup", [
+                $email_template_data = SCF::get_mail_template(
+                    "override_template_privacy_lock_2days_after_signup", [
                     "User" => "{$v["first_name"]} {$v["last_name"]}",
-                ]);
+                    ]
+                );
 
                 $mailer = SCF::get_mailer();
                 $mailer->addAddress($v["email"], "{$v["first_name"]} {$v["last_name"]}");
@@ -236,10 +242,12 @@ if ("name_update" == $section) {
                 $dbi->insert(DB_TBL_PRIVACYLOCK_DATA, $data);
 
                 if (! empty($status)) {
-                    $email_template_data = SCF::get_mail_template("override_template_privacy_lock_change_detected", [
+                    $email_template_data = SCF::get_mail_template(
+                        "override_template_privacy_lock_change_detected", [
                         "User" => "{$v["first_name"]} {$v["last_name"]}",
                         "email" => $pl_v[0],
-                    ]);
+                        ]
+                    );
 
                     $mailer = SCF::get_mailer();
                     $mailer->addAddress($v["email"], "{$v["first_name"]} {$v["last_name"]}");
@@ -266,9 +274,11 @@ if ("name_update" == $section) {
                 $dbi->insert(DB_TBL_PRIVACYLOCK_DATA, $data);
 
                 if (! empty($status)) {
-                    $email_template_data = SCF::get_mail_template("override_template_privacy_lock_change_detected", [
+                    $email_template_data = SCF::get_mail_template(
+                        "override_template_privacy_lock_change_detected", [
                         "User" => "{$v["first_name"]} {$v["last_name"]}",
-                    ]);
+                        ]
+                    );
 
                     $mailer = SCF::get_mailer();
                     $mailer->addAddress($v["email"], "{$v["first_name"]} {$v["last_name"]}");
@@ -322,10 +332,12 @@ if ("name_update" == $section) {
     if (! empty($html)) {
         $versions = explode(":", $html);
         if (! empty($versions[0]) && ! empty($versions[1])) {
-            $email_template_data = SCF::get_mail_template("sendy-new-version-available", [
+            $email_template_data = SCF::get_mail_template(
+                "sendy-new-version-available", [
                 "current" => $versions[0],
                 "new" => $versions[1]
-            ]);
+                ]
+            );
 
             $mailer = SCF::get_mailer();
             $mailer->addAddress("david@socialcatfish.com", "David McClellan");
@@ -404,14 +416,16 @@ if ("name_update" == $section) {
 } elseif ("ris_api_status" == $section) {
     $dbi_cache = new DBI();
     $dbi_cache->connect(API_DB_HOST, API_DB_USER, API_DB_PASSWORD, API_DB_NAME, 1, 0);
-    $sql = sprintf("select count(*) as total,
+    $sql = sprintf(
+        "select count(*) as total,
 			IF(((count(case yandex_results when 0 then 1 else null end)/count(*))*100) >50 , false,true) yandex,
 			IF(((count(case googleLens_results when 0 then 1 else null end)/count(*))*100) >99 , false,true) googleLens,
 			IF(((count(case bingapi_results when 0 then 1 else null end)/count(*))*100) >90 , false,true) bingapi,
 			IF(((count(case tineye_results when 0 then 1 else null end)/count(*))*100) >99 , false,true) tineye,
 			IF(((count(case bing_results when 0 then 1 else null end)/count(*))*100) >70 , false,true) bing,
 			IF(((count(case google_results when 0 then 1 else null end)/count(*))*100) >50 , false,true) google
-			from %s  WHERE date >= DATE_SUB(NOW(), INTERVAL 5 HOUR);", DB_TBL_CACHE);
+			from %s  WHERE date >= DATE_SUB(NOW(), INTERVAL 5 HOUR);", DB_TBL_CACHE
+    );
 
     $result = $dbi_cache->query_to_array($sql);
 
@@ -503,10 +517,12 @@ if ("name_update" == $section) {
         }
 
         foreach (array_intersect_key($firstmail_users, array_unique(array_column($firstmail_users, 'email'))) as $user) {
-            $email_template_data = SCF::get_mail_template("override_template_ris_unviewed_report_first_mail", [
+            $email_template_data = SCF::get_mail_template(
+                "override_template_ris_unviewed_report_first_mail", [
                 "User" => "{$user["first_name"]} {$user["last_name"]}",
                 "Reports" => $firstmail_reports_links[$user["email"]]
-            ], false);
+                ], false
+            );
 
             $mailer = SCF::get_mailer();
             $mailer->addAddress($user["email"], "{$user["first_name"]} {$user["last_name"]}");
@@ -517,10 +533,12 @@ if ("name_update" == $section) {
         }
 
         foreach (array_intersect_key($secondmail_users, array_unique(array_column($firstmail_users, 'email'))) as $user) {
-            $email_template_data = SCF::get_mail_template("override_template_ris_unviewed_report_second_mail", [
+            $email_template_data = SCF::get_mail_template(
+                "override_template_ris_unviewed_report_second_mail", [
                 "User" => "{$user["first_name"]} {$user["last_name"]}",
                 "Reports" => $secondmail_reports_links[$user["email"]]
-            ], false);
+                ], false
+            );
 
             $mailer = SCF::get_mailer();
             $mailer->addAddress($user["email"], "{$user["first_name"]} {$user["last_name"]}");
@@ -556,7 +574,7 @@ if ("name_update" == $section) {
 
             if ($image_search_result["completed"] && !$image_search_result["pending"]) {
                 if ($image_search_result["matches_exact"]>$result["old_result_exact_count"]) {
-                    $sql = sprintf("SELECT i.user_id, u.email FROM %s i inner join %s u on i.user_id = u.id WHERE i.id = %s", DB_TBL_IMAGE_SEARCH, DB_TBL_USER, $result["image_search_id"]) ;
+                    $sql = sprintf("SELECT i.user_id, u.email FROM %s i inner join %s u on i.user_id = u.id WHERE i.id = %s", DB_TBL_IMAGE_SEARCH, DB_TBL_USER, $result["image_search_id"]);
                     $data = $dbi->query_to_array($sql);
 
                     echo $data["email"]."\n";
@@ -565,9 +583,11 @@ if ("name_update" == $section) {
                     $sendy->setListId(SENDY_LIST_RIS_DOWN_TIME_REPORTS);
 
                     $sendy->delete($data["email"]);
-                    $sendy->subscribe(array(
+                    $sendy->subscribe(
+                        array(
                         'email' => $data["email"],
-                    ));
+                        )
+                    );
                 }
 
                 $sql = sprintf("UPDATE %s SET proceeded = 1 WHERE image_search_id = %s", DB_TBL_IMAGE_SEARCH_DOWN_TIMELOG, $result["image_search_id"]);
