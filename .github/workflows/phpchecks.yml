@@ -1,10 +1,10 @@
-name: PHP checks
+name: PHP Validation
 
 on:
   push:
     branches: [ psr-12 ]
   pull_request:
-    branches: [ psr12 ]
+    branches: [ psr-12 ]
 
 jobs:
   build:
@@ -32,9 +32,6 @@ jobs:
 
     - name: Run lint
       run: composer lint 
-
-    - name: Run phpcbf
-      run: composer phpcbf
 
     - name: Run phpcs
       run: composer phpcs
