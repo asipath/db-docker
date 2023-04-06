@@ -102,9 +102,9 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
                         <span class="si-secured-fill"></span>
                         <p><span>Successfully Added to Privacy Lock</span></p>
                         <p>Monitoring the report in Privacy Lock since <?php
-                            if ($pl_data["first_tracking_date"] == "") {
-                                $pl_data["first_tracking_date"] = date(DATE_FORMAT);
-                            }
+                        if ($pl_data["first_tracking_date"] == "") {
+                            $pl_data["first_tracking_date"] = date(DATE_FORMAT);
+                        }
                             echo date(DATE_FORMAT, strtotime($pl_data["first_tracking_date"])); ?></p>
                     </div>
                     <div class="col-sm-4">
@@ -173,8 +173,8 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
                     </div>
                 </div>
             <?php
-                    if ($phone_number_search) {
-                        ?>
+            if ($phone_number_search) {
+                ?>
                 <div class="row phone_number_search">
                     <div class="col-xs-12 col-md-12">
                     <strong>Carrier: </strong><span> <?php echo($search["meta"]["carrier"] ?: "N/A"); ?></span><br>
@@ -201,11 +201,11 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
                     </div>
                 </div>
                 <?php
-                    } else {
-                        ?>
-                        <?php if (!empty($result["gender"])) { ?>
+            } else {
+                ?>
+                <?php if (!empty($result["gender"])) { ?>
                                 <strong>Gender :</strong><p><?php echo ucfirst(strtolower($result["gender"])); ?></p><br>
-                        <?php } ?>
+                <?php } ?>
                         <?php if (!empty($result["locations"][0])) { ?>
                             <strong>Likely Current Address :</strong><p><?php echo ucfirst(strtolower($result["locations"][0])); ?></p><br>
                         <?php } ?>
@@ -218,12 +218,12 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
             <?php } ?>
    
                 <?php
-                    if (empty($premium_content_user) && !empty($result['premium_data'])) {
-                        ?>
+                if (empty($premium_content_user) && !empty($result['premium_data'])) {
+                    ?>
                             <br><div class="btn btn-dark-green mobile-premium-btn" data-target="premium_data_found" <?php SCF::js_controller("modal.onclick_show"); ?>>UNLOCK PREMIUM</div>
                     <?php
-                    }
-                    ?>
+                }
+                ?>
         
         </div> -->
                     <!-- start -->
@@ -570,10 +570,10 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
 
                     <h3 class="<?php echo $class; ?> <?php echo $velocityClass; ?>"><span
                                 class="total-times"><?php if (!empty($velocity) && array_sum($velocity)) {
-                                ?><?php echo $velocity["total"]; ?><?php
-                            } else {
-                                echo "0";
-                            } ?></span>times this <?php echo $searchtype; ?> has been
+                                    ?><?php echo $velocity["total"]; ?><?php
+                                                    } else {
+                                                        echo "0";
+                                                    } ?></span>times this <?php echo $searchtype; ?> has been
                         searched <?php echo $velocitybtn; ?></h3>
 
                     <div class="accordion-btn" <?php SCF::js_controller("accordion.item") ?>><span class="expand">What is this</span><span
@@ -1025,12 +1025,12 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
                             <div class="col-md-4">
                                 <div class="jump-link <?php echo (in_array($_summary['key'], $idi_sections)) ? 'idi_summary' : ''; ?>"
                                      data-target="<?php if ($_summary["key"] == 'jobs_in_detail') {
-                                         echo 'jobs';
-                                     } elseif ($_summary["key"] == 'education_in_detail') {
-                                         echo 'educations';
-                                     } else {
-                                         echo $_summary["key"];
-                                     } ?>" <?php echo SCF::js_controller("results.summary_link"); ?>><span
+                                            echo 'jobs';
+                                                  } elseif ($_summary["key"] == 'education_in_detail') {
+                                                      echo 'educations';
+                                                  } else {
+                                                      echo $_summary["key"];
+                                                  } ?>" <?php echo SCF::js_controller("results.summary_link"); ?>><span
                                             class="si-<?php echo $_summary["icon"] ?>"></span><?php echo $_summary["caption"] ?>
                                     <label class='<?php echo ($_summary["count"] == 0) ? "btn_zero" : ""; ?>'><?php echo $_summary["count"]; ?></label>
                                 </div>
@@ -3139,7 +3139,7 @@ if (!empty($phone) && $pwnd_and_IPQ_only) {
                     <p class="box-title">According to the most updated deed, these are the possible owners of this
                         property. <?php if ($show_text) {
                             ?>Click on 'Run Search' to find out more information about any possible owner.<?php
-                        } ?></p>
+                                  } ?></p>
                     <div class="row img-box-row">
                         <?php
                         $owner_fields = ["primary_grantee_1", "primary_grantee_2", "secondary_grantee_1", "secondary_grantee_2"];
