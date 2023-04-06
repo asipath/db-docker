@@ -33,6 +33,9 @@ jobs:
     - name: Run lint
       run: composer lint 
 
+    - name: Run phpcbs
+      run: composer phpcbs
+
     - name: Run phpcs
       run: composer phpcs
 
