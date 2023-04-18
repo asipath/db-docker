@@ -1,3177 +1,1104 @@
 <?php
 
-use melissadata\MelissaDataRAS;
-use ZeroBounceAPI\ZeroBounceAPI;
-
-if (! defined("FROM_INDEX")) {
-    die();
-}
-
-if (SYSTEM::is_ajax_request()) {
-    switch ($cmd) {
-        // AB Baselines
-
-        case 'sendy_ss':
-            $email = SYSTEM::get_request_value("email", "", "POST");
-
-            if (!DEBUG && !empty($email)) {
-                    $sendy = SYSTEM::loadsendy();
-
-                if (!isset($_SESSION["capture-email"])) {
-                    $_SESSION["capture-email"] = $email;
-
-                    $email_validation = new ZeroBounceAPI(ZEROBOUNCE_API_KEY);
-                    $status = $email_validation->send_request($email);
-                    if ($status == "valid") {
-                        // standard search
-                        $sendy->setListId(SENDY_LIST_ABANDONEDCART_STANDARD_SEARCH);
-                        $sendy->subscribe(array(
-                            'email' => $email,
-                            "name" => ""
-                        ));
-
-                        $ajax_status["status"] = $email;
-                    } else {
-                        $ajax_status["status"] = $email;
-                    }
-                } else {
-                    $_SESSION["capture-email"] = $email;
-                    $ajax_status["status"] = $email;
-                }
-            } else {
-                $ajax_status["status"] = $email;
-            }
-
-            break;
-
-        case 'sendy_search_specialist':
-            $email = SYSTEM::get_request_value("email", "", "POST");
-
-            if (! DEBUG && !empty($email)) {
-                $sendy = SYSTEM::loadsendy();
-
-                $sendy->setListId(SENDY_LIST_ABANDONEDCART_SEARCH_SPECIALIST);
-                $sendy->subscribe(array(
-                    'email' => $post_data["email"],
-                    "name" => ""
-                ));
-            }
-            break;
-
-        case 'baselines_cancel_pause_1':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("4_cancel_pause_30", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_cancel_pause_2':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("4_cancel_pause_60", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_cancel_pause_3':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("4_cancel_pause_90", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-            break;
-
-        case 'baselines_cancel_no':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("1_cancel_no", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_cancel_essentials':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("2_cancel_essentials", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_cancel_switch':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("3_cancel_switch", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_cancel_reason_1':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_1", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-        case 'baselines_cancel_reason_2':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_2", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-        case 'baselines_cancel_reason_3':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_3", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-        case 'baselines_cancel_reason_4':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_4", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-        case 'baselines_cancel_reason_5':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_5", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-        case 'baselines_cancel_reason_6':
-            if (isset($_SESSION["ab_baselines_cancel"]) && isset($_SESSION["step_zero_cancel"]) && !isset($_SESSION["step_one_cancel"])) {
-                $_SESSION["ab_baselines_cancel"]->track_event("5_cancel_full_6", SYSTEM::get_device_type());
-                $_SESSION["step_one_cancel"] = true;
-            }
-
-            break;
-
-        case 'baselines_ris_0':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["0"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["0"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["1"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step1", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["1"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["1"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["1"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_1_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["1"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_1_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["1"] = true;
-            }
-            break;
-
-        case 'baselines_ris_1':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["1"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["1"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"]["2"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["2"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step2", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["2"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["2"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["2"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_2_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["2"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_2_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["2"] = true;
-            }
-            break;
-
-        case 'baselines_ris_2':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["2"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["2"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"]["3"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["3"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step3", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["3"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["3"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["3"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_3_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["3"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_3_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["3"] = true;
-            }
-            break;
-
-        case 'baselines_ris_3':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["3"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["3"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"]["4"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["4"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step4", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["4"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["4"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["4"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_4_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["4"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_4_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["4"] = true;
-            }
-            break;
-
-        case 'baselines_ris_4':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["4"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["4"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"]["5"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["5"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step5", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["5"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["5"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["5"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_5_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["5"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_5_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["5"] = true;
-            }
-            break;
-
-        case 'baselines_ris_5':
-            if (isset($_SESSION["step_one_price_ris"]) && isset($_SESSION["ab_price_change_ris"]) && !isset($_SESSION["step_two_price_ris"]["5"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_price_change_ris"]) && isset($_SESSION["step_one_price_ris"]) && !isset($_SESSION["step_two_price_ris"]["5"])) {
-                $_SESSION["ab_price_change_ris"]->track_event("2_a_price_ris_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ris"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_search_progress_WW_RIS"]) && isset($_SESSION["step_one_WW_RIS"]) && !isset($_SESSION["step_two_WW_RIS"]["6"])) {
-                $_SESSION["ab_search_progress_WW_RIS"]->track_event("2_image_a_WW_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_WW_RIS"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_old_img"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_three"]["6"])) {
-                $_SESSION["ab_baselines_old_img"]->track_event("ris_a_step6", SYSTEM::get_device_type());
-                $_SESSION["step_three"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_basic_img"]) && isset($_SESSION["step_one_ris_basic"]) && !isset($_SESSION["step_three_basic"]["6"])) {
-                $_SESSION["ab_baselines_basic_img"]->track_event("ris_basic_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_three_basic"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image"]) && isset($_SESSION["step_one_ris"]) && !isset($_SESSION["step_two_ris"]["6"])) {
-                $_SESSION["ab_baselines_image"]->track_event("2_image_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_main"]) && isset($_SESSION["step_one_ris_main"]) && !isset($_SESSION["step_two_ris_main"]["6"])) {
-                $_SESSION["ab_baselines_image_main"]->track_event("2_image_a_step_6_main", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_main"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_image_ad"]) && isset($_SESSION["step_one_ris_ad"]) && !isset($_SESSION["step_two_ris_ad"]["6"])) {
-                $_SESSION["ab_baselines_image_ad"]->track_event("2_image_a_step_6_ad", SYSTEM::get_device_type());
-                $_SESSION["step_two_ris_ad"]["6"] = true;
-            }
-            break;
-
-        case 'baselines_ss_0':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["0"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["0"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["0"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["0"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["0"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step0_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["0"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step0_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["0"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step0", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["0"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["0"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["0"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["0"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["0"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["0"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["0"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_0", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["0"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_0", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["0"] = true;
-            }
-            break;
-
-        case 'baselines_ss_1':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["1"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["1"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["1"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["1"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["1"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_1", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["1"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["1"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step1_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["1"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step1_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["1"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step1", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["1"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["1"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["1"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["1"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["1"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["1"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["1"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["1"] = true;
-            }
-
-            break;
-
-        case 'baselines_ss_2':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["2"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["2"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["2"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["2"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["2"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_2", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["2"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["2"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step2_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["2"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step2_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["2"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step2", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["2"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["2"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["2"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["2"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["2"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["2"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["2"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["2"] = true;
-            }
-
-            break;
-
-        case 'baselines_ss_3':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["3"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["3"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["3"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["3"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["3"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["3"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["3"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step3_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["3"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step3_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["3"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step3", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["3"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["3"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["3"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["3"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["3"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["3"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["3"] = true;
-            }
-            break;
-
-        case 'baselines_ss_4':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["4"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["4"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["4"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["4"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["4"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_4", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["4"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["4"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step4_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["4"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step4_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["4"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step4", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["4"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["4"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["4"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["4"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["4"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["4"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["4"] = true;
-            }
-            break;
-
-        case 'baselines_ss_5':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["5"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["5"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["5"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["5"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["5"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_5", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["5"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["5"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step5_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["5"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step5_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["5"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step5", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["5"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["5"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["5"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["5"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["5"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["5"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["5"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["5"] = true;
-            }
-            break;
-
-        case 'progress_ss_idi':
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["6"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step6_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["6"] = true;
-            }
-            break;
-
-        case 'baselines_ss_report':
-            if (isset($_SESSION["ab_email_capture"]) && isset($_SESSION["step_one_capture"]) && !isset($_SESSION["step_two_capture"]["6"])) {
-                $_SESSION["ab_email_capture"]->track_event("2_search_capture_a_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_capture"]["6"] = true;
-            }
-            if (isset($_SESSION["step_one_price_ss"]) && isset($_SESSION["ab_price_change_ss"]) && !isset($_SESSION["step_two_price_ss"]["6"])) {
-                $_SESSION["ab_price_change_ss"]->track_event("2_a_price_ss_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_price_ss"]["6"] = true;
-            }
-            if (isset($_SESSION["step_two_WW_SS"]) && isset($_SESSION["ab_search_progress_WW_SS"]) && !isset($_SESSION["step_three_WW_SS"]["6"])) {
-                $_SESSION["ab_search_progress_WW_SS"]->track_event("3_a_WW_RIS_6", SYSTEM::get_device_type());
-                $_SESSION["step_three_WW_SS"]["6"] = true;
-            }
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["8"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step7_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["8"] = true;
-            }
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_two_cr"]) && !isset($_SESSION["step_three_cr"]["6"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("3_name_a_step6_cr", SYSTEM::get_device_type());
-                $_SESSION["step_three_cr"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_home_name"]) && isset($_SESSION["step_two_name"]) && !isset($_SESSION["step_three_ss"]["6"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("3_name_a_step6", SYSTEM::get_device_type());
-                $_SESSION["step_three_ss"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username"]) && isset($_SESSION["step_two_username"]) && !isset($_SESSION["step_three_username"]["6"])) {
-                $_SESSION["ab_baselines_username"]->track_event("3_username_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_three_username"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_username_main"]) && isset($_SESSION["step_two_username_main"]) && !isset($_SESSION["step_three_username_main"]["6"])) {
-                $_SESSION["ab_baselines_username_main"]->track_event("3_username_main_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_three_username_main"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone"]) && isset($_SESSION["step_one_phone"]) && !isset($_SESSION["step_two_phone"]["6"])) {
-                $_SESSION["ab_baselines_phone"]->track_event("2_phone_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email"]) && isset($_SESSION["step_one_email"]) && !isset($_SESSION["step_two_email"]["6"])) {
-                $_SESSION["ab_baselines_email"]->track_event("2_email_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_email"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_email_main"]) && isset($_SESSION["step_one_email_main"]) && !isset($_SESSION["step_two_email_main"]["6"])) {
-                $_SESSION["ab_baselines_email_main"]->track_event("2_email_main_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_email_main"]["6"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_phone_main"]) && isset($_SESSION["step_one_phone_main"]) && !isset($_SESSION["step_two_phone_main"]["6"])) {
-                $_SESSION["ab_baselines_phone_main"]->track_event("2_phone_main_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_two_phone_main"]["6"] = true;
-            }
-
-            break;
-
-        case 'baselines_ras_1':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_zero_ras"]) && !isset($_SESSION["step_one_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_one_ras"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_zero_ras_main"]) && !isset($_SESSION["step_one_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_1", SYSTEM::get_device_type());
-                $_SESSION["step_one_ras_main"] = true;
-            }
-            break;
-
-        case 'baselines_ras_2':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_one_ras"]) && !isset($_SESSION["step_two_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_ras"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_one_ras_main"]) && !isset($_SESSION["step_two_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_2", SYSTEM::get_device_type());
-                $_SESSION["step_two_ras_main"] = true;
-            }
-            break;
-        case 'baselines_ras_3':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_two_ras"]) && !isset($_SESSION["step_three_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_ras"]["3"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_two_ras_main"]) && !isset($_SESSION["step_three_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_3", SYSTEM::get_device_type());
-                $_SESSION["step_three_ras_main"] = true;
-            }
-            break;
-
-        case 'baselines_ras_4':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_three_ras"]) && !isset($_SESSION["step_four_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_four_ras"]["4"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_three_ras_main"]) && !isset($_SESSION["step_four_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_4", SYSTEM::get_device_type());
-                $_SESSION["step_four_ras_main"] = true;
-            }
-            break;
-
-        case 'baselines_ras_5':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_four_ras"]) && !isset($_SESSION["step_five_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_five_ras"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_four_ras_main"]) && !isset($_SESSION["step_five_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_5", SYSTEM::get_device_type());
-                $_SESSION["step_five_ras_main"] = true;
-            }
-            break;
-
-        case 'baselines_ras_6':
-            if (isset($_SESSION["ab_baselines_ras"]) && isset($_SESSION["step_five_ras"]) && !isset($_SESSION["step_six_ras"])) {
-                $_SESSION["ab_baselines_ras"]->track_event("1_ras_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_six_ras"] = true;
-            }
-            if (isset($_SESSION["ab_baselines_ras_main"]) && isset($_SESSION["step_five_ras_main"]) && !isset($_SESSION["step_six_ras_main"])) {
-                $_SESSION["ab_baselines_ras_main"]->track_event("1_ras_main_a_step_6", SYSTEM::get_device_type());
-                $_SESSION["step_six_ras_main"] = true;
-            }
-            break;
-
-        case 'better_results_search':
-            $token = md5(uniqid());
-            $_SESSION["better_results_search"][$token] = $input_post;
-            $ajax_status["status"] = true;
-            $ajax_status["token"] = $token;
-            break;
-
-        case 'search_filtering':
-            $token = md5(uniqid());
-            $_SESSION["search_filtering"][$token] = $input_post;
-            $ajax_status["status"] = true;
-            $ajax_status["token"] = $token;
-            break;
-
-        case "close_phil_walkthrough":
-            if ($user_id) {
-                $ajax_status["status"] = true;
-                USER::close_phil_walkthrough($user_id);
-            } else {
-                $ajax_status["status"] = false;
-            }
-            break;
-
-        case "search_verification_required":
-            $ajax_status = [
-                "status" => ! empty($social_search_show_recaptcha),
-                "content" => ! empty($social_search_show_recaptcha) ? file_get_contents($current_template_path . "content/recaptcha_modal.php") : "",
-            ];
-            break;
-
-        case "ris_status":
-            if (! empty($input_post["id_list"]) && is_array($input_post["id_list"])) {
-                $ajax_status = [
-                    "status" => true,
-                    "results" => Search::ris_status($user_id, $input_post["id_list"]),
-                ];
-            } else {
-                $ajax_status["results"] = [];
-            }
-            break;
-
-        case "ris_report_ready":
-            if (! empty($input_post["id"])) {
-                $ajax_status = [
-                    "status" => Search::ris_report_status($user_id, $input_post["id"]),
-                ];
-            } else {
-                $ajax_status["status"] = false;
-            }
-            break;
-
-        case "address_verification":
-            $ajax_status = [
-                "status" => true,
-                "old_address" => "",
-                "new_address" => "",
-                "billing_address1" => "",
-                "billing_city" => "",
-                "billing_state" => "",
-                "billing_postal_code" => "",
-            ];
-
-            $fields = [ "billing_address1", "billing_address2", "billing_city", "billing_state", "billing_postal_code", "billing_country" ];
-            $address = SYSTEM::array_get_values_for_keys($_POST, $fields, "");
-
-            if ("US" == $address["billing_country"]) {
-                unset($address["billing_country"]);
-                $stream = $client->request("https://maps.googleapis.com/maps/api/geocode/json?&address=" . implode(" ", $address) . "&key=AIzaSyBz8VgaMxVEgJiVtZvNxcI319THlvbizPg");
-                $address_data = ( $stream["status"] ) ? @json_decode($stream["response"], true) : false;
-
-                if (! empty($address_data["results"][0]["address_components"])) {
-                    $compontents = [];
-                    foreach ($address_data["results"][0]["address_components"] as $compontent) {
-                        $key = array_shift($compontent["types"]);
-                        $compontents[ $key ] = $compontent["short_name"];
-                    }
-                    $new_address = "{$compontents["street_number"]} {$compontents["route"]}, {$compontents["locality"]}, {$compontents["administrative_area_level_1"]} {$compontents["postal_code"]}" . ( ! empty($compontents["postal_code_suffix"]) ? "-{$compontents["postal_code_suffix"]}" : "" );
-                    $old_address = preg_replace("/, ,/", ",", "{$address["billing_address1"]}, {$address["billing_address2"]}, {$address["billing_city"]}, {$address["billing_state"]} {$address["billing_postal_code"]}");
-
-                    $check_address = strtolower(preg_replace("/[^a-z0-9 \-]/i", "", $new_address));
-                    $old_check_address = strtolower(preg_replace("/[ ]+/", " ", preg_replace("/[^a-z0-9 \-]/i", " ", $old_address)));
-
-                    if ($check_address != $old_check_address) {
-                        $ajax_status = [
-                            "status" => false,
-                            "old_address" => $old_address,
-                            "new_address" => $new_address,
-                            "suggested" => [
-                                "billing_address1" => "{$compontents["street_number"]} {$compontents["route"]}",
-                                "billing_city" => $compontents["locality"],
-                                "billing_state" => $compontents["administrative_area_level_1"],
-                                "billing_postal_code" => $compontents["postal_code"] . ( ! empty($compontents["postal_code_suffix"]) ? "-{$compontents["postal_code_suffix"]}" : "" ),
-                            ]
-                        ];
-                    }
-                }
-            }
-            break;
-
-        case 'apply_coupon':
-            if ($coupon_data = $stripe->get_coupon_code($post_data["coupon"])) {
-                $ajax_status["status"] = true;
-                $_SESSION["coupon_data"] = $coupon_data;
-            } else {
-                $ajax_status["status"] = false;
-            }
-
-            break;
-
-        case 'remove_coupon':
-            unset($_SESSION["coupon_data"]);
-            $ajax_status["status"] = true;
-
-            break;
-
-        case 'get_cities':
-            $ajax_status["data"] = SCF::get_city_list_for_state($post_data["state"]);
-            $ajax_status["status"] = true;
-            break;
-
-        case 'phone_check':
-            $phone_number = preg_replace("/[^0-9]/", "", $post_data["phone_number"]);
-            $ajax_status["status"] = WhitePages::phone_scrape_check($phone_number);
-            break;
-
-        case 'igp_status':
-            $ajax_status["status"] = ! empty($_SESSION["image_token"][ $token ]);
-            if ($ajax_status["status"]) {
-                // Randomize image counts for guest users
-                //$image_status = Search::get_igp_image_search_status( $_SESSION["image_token"][ $token ]["pending_image_id"] ); // Disabled this to randomize the numbers
-                $image_status = [ "matches_exact" => mt_rand(10, 30), "matches_similar" => mt_rand(10, 30), "batch" => 1, "phash" => md5(time()) ];
-                $_SESSION["image_token"][ $token ]["matches_exact"] = $ajax_status["exact_matches"] = $image_status["matches_exact"];
-                $_SESSION["image_token"][ $token ]["matches_similar"] = $ajax_status["similar_matches"] = $image_status["matches_similar"];
-                $ajax_status["batch"] = ! empty($image_status["batch"]);
-                $ajax_status["hash"] = ! empty($image_status["phash"]);
-            }
-            break;
-
-        case 'nmi_update':
-            $error_fields = $nmi->validate_initial_form_data($post_data);
-            if (! empty($error_messages)) {
-                $ajax_status["status"] = false;
-                $ajax_status["message"] = array_shift($error_messages);
-                //if( ! empty( $GLOBALS["error_messages"] ) ) Behavior::system_log_action( __FILE__, __LINE__, __METHOD__, "NMI::" . array_shift( $error_messages ), "error" );
-
-
-                unset($GLOBALS["error_messages"]);
-            } else {
-                $plan_id = SYSTEM::request("id", 0);
-                $plan_data = Membership::get_user_plan($user_id, $plan_id);
-
-                if (empty($plan_data)) {
-                    $ajax_status["status"] = false;
-                    $ajax_status["message"] = "An error Occured. Please contact site administrator";
-                } else {
-                    $data = [
-                        "firstname" => ! empty($user_data["first_name"]) ? $user_data["first_name"] : $post_data["billing_firstname"],
-                        "lastname" => ! empty($user_data["last_name"]) ? $user_data["last_name"] : $post_data["billing_lastname"],
-                        "address1" => $post_data["billing_address1"],
-                        "address2" => $post_data["billing_address2"],
-                        "city" => $post_data["billing_city"],
-                        "state" => $post_data["billing_state"],
-                        "zip" => $post_data["billing_postal_code"],
-                        "country" => $post_data["billing_country"],
-                        "email" => ! empty($user_data["email"]) ? $user_data["email"] : $post_data["email"],
-                        "plan" => $plan_data
-                    ];
-
-                    $nmi->set_billing($data);
-                    $ajax_status = $nmi->update_customer_vault($data, BASE_URL . "dashboard.html?section=update&id={$plan_id}");
-                    $ajax_status["status"] = true;
-                }
-            }
-            break;
-
-        case 'membership_signup':
-            $datauser = ! empty($post_data["datauser"]) ? $post_data["datauser"] : 0;
-
-
-            if ($post_data["pg_type"] != "nmi" || ( $post_data["pg_type"] == "nmi" && empty($datauser) )) {
-                $form_validation = [
-                    [
-                        "name" => "billing_firstname",
-                        "value" => $post_data["billing_firstname"],
-                        "caption" => "First Name",
-                        "validation" => "required|max_length[100]",
-                    ],
-                    [
-                        "name" => "billing_lastname",
-                        "value" => $post_data["billing_lastname"],
-                        "caption" => "Last Name",
-                        "validation" => "required|max_length[100]",
-                    ],
-                    [
-                        "name" => "email",
-                        "value" => $post_data["email"],
-                        "caption" => "E-Mail",
-                        "validation" => "required|email|max_length[100]",
-                    ],
-                    [
-                        "name" => "password",
-                        "value" => $post_data["password"],
-                        "caption" => "Password",
-                        "validation" => "required|max_length[100]",
-                    ],
-                ];
-
-
-                if (! empty($post_data["billing_firstname"])) {
-                    Behavior::add_user_data("firstname", $post_data["billing_firstname"]);
-                }
-                if (! empty($post_data["billing_lastname"])) {
-                    Behavior::add_user_data("lastname", $post_data["billing_lastname"]);
-                }
-                if (! empty($post_data["email"])) {
-                    Behavior::add_user_data("email", $post_data["email"]);
-                }
-
-                if (! empty($post_data["show_phone_number"]) && $post_data["show_phone_number"] == 1) {
-                    $form_validation = array_merge($form_validation, [
-                        [
-                            "name" => "billing_phone",
-                            "value" => preg_replace("/[^0-9]/", "", $post_data["billing_phone"]),
-                            "caption" => "Phone Number",
-                            "validation" => "required|phone|max_length[100]",
-                        ],
-                    ]);
-                }
-
-                $error_fields = SYSTEM::form_validate($form_validation);
-                if (! $user_id && $user_details = User::get_by_email($post_data["email"])) {
-                    /* AB Test: Existing User Login CSI-3859 : START*/
-
-
-                    $error_messages[] =  "Login User";
-                    $_SESSION["has_active_plans"] =  USER::get_active_plan_ids($user_details["id"]);
-                    $ajax_status["active_plans"] = array_key_exists($_SESSION["membership_type"], $_SESSION["has_active_plans"]);
-                    /* AB Test: Existing User Login CSI-3859 : START*/
-                }
-
-
-
-                if (! $user_id && User::is_email_blocked($post_data["email"])) {
-                    $error_messages[] = "E-Mail Address blocked.";
-                }
-
-                if ($post_data["email"] != $post_data["email_confirm"]) {
-                    $error_messages[] = "E-Mail Address does not match.";
-                }
-
-                if (! empty($post_data["show_phone_number"]) && $post_data["show_phone_number"] == 1 && in_array("billing_phone", $error_fields)) {
-                    array_unshift($error_messages, "Phone Number required and must be atleast 10 digits.");
-                }
-
-                if ($input_post->email_validation != 1 && ! DEBUG) {
-                    $email_validation = new ZeroBounceAPI(ZEROBOUNCE_API_KEY);
-                    $status = $email_validation->send_request($post_data["email"]);
-                    if ($status != "valid" && $status != "invalid") {
-                        $_SESSION["email_verification_status"] = $status;
-                    }
-                    if ($status == "invalid") {
-                        unset($_SESSION["email_verification_status"]);
-                        $error_messages[] = "Valid Email Required. We will NEVER share or sell your email. Email is required to access your account, change your password and receive billing information.";
-                    }
-                }
-            }
-
-            if (! empty($error_messages)) {
-                $error_message = array_shift($error_messages);
-                Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, $error_message, ["errors", "membership signup failed", $error_message ]);
-
-                $ajax_status["status"] = false;
-                $ajax_status["message"] = $error_message;
-                unset($GLOBALS["error_messages"]);
-            } else {
-                if ($post_data["pg_type"] == "nmi") {
-                    if (! empty($_SESSION["tokens"][ $token ])) {
-                        $membership = $_SESSION["tokens"][ $token ]["membership"];
-
-                        //Assign combine monlthy membership plans
-                        $monthly_membership_plans_combine = array( PLAN_UNLIMITED_MONTHLY_1, PLAN_UNLIMITED_MONTHLY_3, PLAN_UNLIMITED_MONTHLY_6 );
-                        if (! empty($post_data["plan_id"]) && in_array($post_data["plan_id"], $monthly_membership_plans_combine)) {
-                            $membership = $_SESSION["tokens"][$token]["membership"] = Membership::get($post_data["plan_id"]);
-                            $_SESSION["tokens"][$token]["membership_id"] = $membership["id"];
-                        }
-
-                        $is_subscription = ($membership["recurring_amount"] > 0);
-
-                        if ($is_subscription) {
-                            switch ($membership["start_recurring_period"]) {
-                                case "days":
-                                        $start_subscription = strtotime("+{$membership["start_recurring_frequency"]} days");
-                                    break;
-                                case "mont":
-                                        $start_subscription = strtotime("+{$membership["start_recurring_frequency"]} month");
-                                    break;
-                                case "year":
-                                        $start_subscription = strtotime("+{$membership["start_recurring_frequency"]} year");
-                                    break;
-                            }
-
-                            $start_subscription = date("Ymd", $start_subscription);
-                        }
-
-                        $data = [
-                            "firstname" => ! empty($user_data["first_name"]) ? $user_data["first_name"] : $post_data["billing_firstname"],
-                            "lastname" => ! empty($user_data["last_name"]) ? $user_data["last_name"] : $post_data["billing_lastname"],
-                            "address1" => $post_data["billing_address1"],
-                            "address2" => $post_data["billing_address2"],
-                            "city" => $post_data["billing_city"],
-                            "state" => $post_data["billing_state"],
-                            "zip" => $post_data["billing_postal_code"],
-                            "country" => $post_data["billing_country"],
-                            "email" => ! empty($user_data["email"]) ? $user_data["email"] : $post_data["email"],
-                            "is_subscription" => $is_subscription,
-                            "start_subscription" => $start_subscription,
-                            "membership" => $membership,
-                        ];
-
-                        $_SESSION["tokens"][$token]["nmi_data"] = [
-                            "billing_firstname" => $post_data["billing_firstname"],
-                            "billing_lastname" => $post_data["billing_lastname"],
-                            "billing_address1" => $post_data["billing_address1"],
-                            "billing_address2" => $post_data["billing_address2"],
-                            "billing_city" => $post_data["billing_city"],
-                            "billing_state" => $post_data["billing_state"],
-                            "billing_postal_code" => $post_data["billing_postal_code"],
-                            "billing_country" => $post_data["billing_country"],
-                            "email" => $post_data["email"],
-                            "password" => $post_data["password"],
-                            "tos_agree" => $post_data["tos_agree"],
-                            "card_name" => $post_data["card_name"],
-                            "report_agreement" => $post_data["report_agreement"],
-                        ];
-
-                        $nmi->set_billing($data);
-                        $ajax_status = $nmi->do_sale($data, BASE_URL . "membership-levels/?cmd=nmitr&token={$token}");
-
-                        $_SESSION["tokens"][$token]["nmi_auth_response"] = $ajax_status["response"];
-                        unset($ajax_status["response"]);
-                    }
-                }
-                if (in_array("4", $post_data["signup_purpose"])) {
-                    $post_data["signup_purpose"][0] = $input_post->signup_purpose_text;
-                }
-                $_SESSION["sign_up_purpose"] = $post_data["signup_purpose"];
-                $ajax_status["status"] = true;
-            }
-            break;
-
-        case "token_update":
-            $_SESSION["tokens"][ $token ]["post_data"] = $_POST;
-            $ajax_status["status"] = true;
-            break;
-
-        case 'my_stat':
-            // User search tracking alert popup disable request.
-            if (! empty($user_id) && ! empty($post_data['method'])) {
-                user::set_meta($user_id, 'disable_alert_being_tracked', ( $post_data['method'] == 'true' ) ? 1 : 0);
-            }
-
-            break;
-
-        case 'subscription_delete_alert':
-            // whenever user or super admin trying to delete a unlimited subscription, they will get a popup alert asking to downgrade account
-
-            $id = SYSTEM::get_request_value("id", 0);
-            $user_info = SYSTEM::get_request_value("user", 0);
-            $canceltype = SYSTEM::get_request_value("canceltype", "");
-
-            $user_info = ( ! empty($user_info) && 255 == $user_data["user_level"] ) ? $user_info : $user_id;
-            $cancel_plan = Membership::get_user_plan($user_info, $id);
-
-            $switch_plan_allowed = false;
-            $new_membership = [];
-            $user_manager_id = SYSTEM::get_request_value("user_manager", 0);
-            $show_wrapper = true;
-
-            if (! empty($cancel_plan) && ! empty($cancel_plan["active"])) {
-                $cancel_plan_membership = Membership::get($cancel_plan["membership_id"]);
-                $_is_still_in_trial = Membership::is_plan_still_on_trial($cancel_plan, $cancel_plan_membership);
-                $switchable_plans = Membership::get_switchable_data_for_plan($cancel_plan);
-                if ($switch_plan_allowed = $switchable_plans["switchable"]) {
-                    $new_membership = $switchable_plans["switchable_plan"];
-                }
-            }
-
-            if ($user_data["classic_template_forced"] == 1) {
-                include "{$default_template_path}content/cancel-subscription-modal.php";
-            } else {
-                include "{$current_template_path}content/modals/cancel-subscription-modal.php";
-            }
-
-            die;
-
-            break;
-
-        case 'paymentcard':
-            global $stripe;
-
-            $id = SYSTEM::get_request_value("id", "");
-            $type = SYSTEM::get_request_value("type", "");
-
-            $customer_id = User::get_customer_id_by_user_id($user_id);
-            if (! empty($customer_id)) {
-                $user_cards = User::get_user_payment_cards($user_id);
-                if (! empty($user_cards['card_list'])) {
-                    foreach ($user_cards['card_list'] as $card) {
-                        if ($card->systemid == $id) {
-                            $id = $card->id;
-                            break;
-                        }
-                    }
-                    $return['status'] = 'err';
-                    if ('del' == $type  && count($user_cards['card_list']) > 1) {
-                        $return = $stripe->delete_card($customer_id, $id);
-                    } elseif ('edit' == $type && count($user_cards['card_list']) >= 1) {
-                        $current_date = date("Y-m");
-                        $expire_date = date("Y-m", strtotime("{$post_data["card_expiry_year"]}-{$post_data["card_expiry_month"]}"));
-                        if (! empty($post_data["card_name"]) && $current_date <= $expire_date) {
-                            $data = [
-                                "card_name" =>  $post_data["card_name"],
-                                "card_expiry_month" =>  $post_data["card_expiry_month"],
-                                "card_expiry_year" =>  $post_data["card_expiry_year"]
-                            ];
-
-                            $return = $stripe->update_card($customer_id, $id, $data);
-                        } else {
-                            $return['status'] = 2;
-                        }
-                    }
-
-                    if ($return['status'] == 1) {
-                        $ajax_status["status"] = 1;
-                    } elseif ($return['status'] == 'err') {
-                        $ajax_status["status"] = 'err';
-                    } else {
-                        $ajax_status["status"] = 2;
-                    }
-                } else {
-                    $ajax_status["status"] = 'err';
-                }
-            } else {
-                $ajax_status["status"] = 'err';
-            }
-
-            break;
-
-        case 'filter_city':
-            //Area Code City Filter
-            $country = $post_data['country'];
-            $key =  $post_data['key'];
-            $filter_cities = AreaCode::key_cities($key, $country);
-            echo "<div class='results_cnt'>";
-            foreach ($filter_cities as $row) {
-                echo "<div class='filter_results'>";
-                echo "<a href='" . RELATIVE_URL . "area-code-lookup/" . $row['areacode'] . "/" . $row['prefix'] . "'>";
-                echo $row['city'];
-                echo "<span> (" . $row['areacode'] . "/" . $row['prefix'] . ")</span>";
-                echo "</a>";
-                echo "</div>";
-            }
-            if (count($filter_cities) == 0) {
-                echo "Search results not found";
-            }
-            echo "</div>";
-            die;
-
-            break;
-
-        case "report_phone_number":
-            $form_validation = [
-                [
-                    "name" => "phone-number",
-                    "value" => ! empty($_POST["phone-number"]) ? $_POST["phone-number"] : "",
-                    "caption" => "Phone number",
-                    "validation" => "required|phone|min_length[12]",
-                ],
-                [
-                    "name" => "email",
-                    "value" => $post_data["email"],
-                    "caption" => "Email address",
-                    "validation" => "required|email|max_length[100]",
-                ],
-                [
-                    "name" => "type",
-                    "value" => ! empty($_POST["type"]) ? $_POST["type"] : "",
-                    "caption" => "Phone number type",
-                    "validation" => "required|max_length[100]",
-                ],
-                [
-                    "name" => "details",
-                    "value" => ! empty($_POST["details"]) ? $_POST["details"] : "",
-                    "caption" => "Phone number details",
-                    "validation" => "required|max_length[200]",
-                ],
-            ];
-
-            $error_fields = SYSTEM::form_validate($form_validation);
-            if (empty($error_messages)) {
-                if ($verification_link = Scams::add_number($post_data["email"], $_POST["phone-number"], $_POST["type"], $_POST["details"])) {
-                    $data = [
-                        "verification_link" => $verification_link,
-                        "email"    =>  $post_data["email"]
-                    ];
-
-                    $email_template_data = SCF::get_mail_template("report-a-phone-number-confirmation", $data);
-                    $mailer = SCF::get_mailer();
-                    $mailer->addAddress($post_data["email"]);
-                    $mailer->Subject = "Report A Phone Number Confirmation";
-                    $mailer->msgHTML($email_template_data["html"]);
-                    $mailer->AltBody = $email_template_data["text"];
-                    $mailer->send();
-                }
-                $ajax_status["status"] = true;
-            } else {
-                Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, implode(", ", $error_messages), ["errors", "report phone number failed", implode(", ", $error_messages) ]);
-                $ajax_status["error"] = implode("<br />", $error_messages);
-            }
-            break;
-
-        case 'reports':
-            $type = SYSTEM::get_request_value("type", "");
-            $date = SYSTEM::get_request_value("date", "");
-
-            $date = DateTime::createFromFormat("Y-m-d", date('Y-m-d', (int)substr($date, 0, 10)));
-            if ("abandoned_cart" == $type && $date !== false && ! array_sum($date->getLastErrors()) &&  255 == $user_data["user_level"]) {
-                $data = [];
-                $abandoned_cart = Reports::get_user_abandoned_cart_list($date->format('Y-m-d'));
-                if (! empty($abandoned_cart)) {
-                    foreach ($abandoned_cart as $k => $v) {
-                        $key = empty($v['user_id']) ? $v['visitor_key'] : $v['user_id'];
-
-                        $data[ $key ][] = $v;
-                    }
-                }
-
-                ob_start();
-                include "{$default_template_path}content/reports/abandoned_cart_data.php";
-                $html = ob_get_contents();
-                ob_end_clean();
-
-                $ajax_status["status"] = true;
-                $ajax_status["html"] = $html;
-            } else {
-                $ajax_status["status"] = false;
-            }
-
-            break;
-
-        case 'hide_fb_group_popup':
-            User::set_meta($user_id, 'disable_fb_group_popup', 1);
-            $_SESSION["user"]["disable_fb_group_popup"] = 1;
-            $ajax_status["status"] = true;
-            break;
-
-        case 'hide_verify_exit_page':
-            User::set_meta($user_id, 'disable_verify_exit_page', 1);
-            $_SESSION["user"]["disable_verify_exit_page"] = 1;
-            $ajax_status["status"] = true;
-            break;
-
-        case 'new_look':
-            User::set_meta($user_id, 'newlook_popup', 1);
-            $_SESSION["user"]["newlook_popup"] = 1;
-            $ajax_status["status"] = true;
-            break;
-
-        case "no_result_newsletter":
-            $email = SYSTEM::get_request_value("email", "");
-            if (! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $sendy = SYSTEM::loadsendy();
-                $sendy->setListId(SENDY_LIST_NO_RESULTS_SEARCHES);
-                $sendy->subscribe(array(
-                    'email' => $email,
-                ));
-
-                $ajax_status["status"] = true;
-            }
-
-            break;
-            /* return states - arosha CSI-658*/
-        case 'get_states':
-            $ajax_status["data"] = json_decode('[{"Name": "Alabama", "code": "AL"}, {"Name": "Alaska", "code": "AK"}, {"Name": "Arizona", "code": "AZ"}, {"Name": "Arkansas", "code": "AR"}, {"Name": "California", "code": "CA"}, {"Name": "Colorado", "code": "CO"}, {"Name": "Connecticut", "code": "CT"}, {"Name": "Delaware", "code": "DE"}, {"Name": "District Of Columbia", "code": "DC"}, {"Name": "Florida", "code": "FL"}, {"Name": "Georgia", "code": "GA"}, {"Name": "Hawaii", "code": "HI"}, {"Name": "Idaho", "code": "ID"}, {"Name": "Illinois", "code": "IL"}, {"Name": "Indiana", "code": "IN"}, {"Name": "Iowa", "code": "IA"}, {"Name": "Kansas", "code": "KS"}, {"Name": "Kentucky", "code": "KY"}, {"Name": "Louisiana", "code": "LA"}, {"Name": "Maine", "code": "ME"}, {"Name": "Maryland", "code": "MD"}, {"Name": "Massachusetts", "code": "MA"}, {"Name": "Michigan", "code": "MI"}, {"Name": "Minnesota", "code": "MN"}, {"Name": "Mississippi", "code": "MS"}, {"Name": "Missouri", "code": "MO"}, {"Name": "Montana", "code": "MT"}, {"Name": "Nebraska", "code": "NE"}, {"Name": "Nevada", "code": "NV"}, {"Name": "New Hampshire", "code": "NH"}, {"Name": "New Jersey", "code": "NJ"}, {"Name": "New Mexico", "code": "NM"}, {"Name": "New York", "code": "NY"}, {"Name": "North Carolina", "code": "NC"}, {"Name": "North Dakota", "code": "ND"}, {"Name": "Ohio", "code": "OH"}, {"Name": "Oklahoma", "code": "OK"}, {"Name": "Oregon", "code": "OR"}, {"Name": "Pennsylvania", "code": "PA"}, {"Name": "Rhode Island", "code": "RI"}, {"Name": "South Carolina", "code": "SC"}, {"Name": "South Dakota", "code": "SD"}, {"Name": "Tennessee", "code": "TN"}, {"Name": "Texas", "code": "TX"}, {"Name": "Utah", "code": "UT"}, {"Name": "Vermont", "code": "VT"}, {"Name": "Virginia", "code": "VA"}, {"Name": "Washington", "code": "WA"}, {"Name": "West Virginia", "code": "WV"}, {"Name": "Wisconsin", "code": "WI"}, {"Name": "Wyoming", "code": "WY"} ]');
-            $ajax_status["status"] = true;
-            break;
-
-            /* return countries - arosha CSI-658*/
-        case 'get_countries':
-            $country_list = [];
-            foreach ($GLOBALS["list_of_countries"] as $value => $caption) {
-                $countrt_item =  new stdClass();
-                $countrt_item->code = $value;
-                $countrt_item->name = $caption;
-                $country_list[] = $countrt_item;
-            }
-            $ajax_status["data"] = $country_list;
-            $ajax_status["status"] = true;
-            break;
-
-        case 'exclude_from_directory':
-            $id = SYSTEM::get_request_value("id", 0);
-            $type = SYSTEM::get_request_value("type", 0);
-
-            Search::search_name_exclude_n_include_from_search_cache($id, $type);
-
-            if (! empty($type)) {
-                $ajax_status["html"] = "Include To Directory";
-                $ajax_status["removeclass"] = "exclude_from_directory";
-                $ajax_status["addclass"] = "include_to_directory";
-            } else {
-                $ajax_status["html"] = "Exclude From Directory";
-                $ajax_status["addclass"] = "exclude_from_directory";
-                $ajax_status["removeclass"] = "include_to_directory";
-            }
-
-            $ajax_status["status"] = true;
-
-            break;
-
-        case 'delete_from_directory':
-            $id = SYSTEM::get_request_value("id", 0);
-
-            Search::search_name_delete_from_popular_names($id);
-            $ajax_status["status"] = true;
-
-            break;
-
-        case 'blacklist_customers':
-            $type = SYSTEM::get_request_value("type", "");
-            $method = SYSTEM::get_request_value("method", "");
-
-            $email = SYSTEM::get_request_value("email", "");
-            $first_name = SYSTEM::get_request_value("first_name", "");
-            $last_name = SYSTEM::get_request_value("last_name", "");
-            $creditcard = SYSTEM::get_request_value("creditcard", "");
-            $phone_number = SYSTEM::get_request_value("phone_number", "");
-            $ip = SYSTEM::get_request_value("ip", "");
-            $address_1 = SYSTEM::get_request_value("address_1", "");
-            $address_2 = SYSTEM::get_request_value("address_2", "");
-
-            if ("search" == $type) {
-                $search_blacklist_customers = USER::search_blacklist_customers($email, $first_name, $last_name, $phone_number, $ip, $address_1, $address_2);
-            } elseif ("filterslist" == $type) {
-                $search_blacklist_customers = USER::blacklist_filters_list();
-            } elseif ("update" == $type) {
-                $ids = SYSTEM::get_request_value("ids", "");
-
-                $update_method = $method == "enable" ? "activate" : "deactivate";
-                User::update_activa_status($update_method, $ids);
-
-                $ids = implode(",", $ids);
-                $search_blacklist_customers = USER::search_blacklist_customers_by_ids($ids);
-            } elseif ("deletefilter" == $type) {
-                $id = SYSTEM::get_request_value("id", "");
-
-                $filter_deleted = USER::delete_blacklist_filter_by_id($id);
-                if ($filter_deleted) {
-                    $ajax_status["success"] = true;
-                }
-            } elseif ("submitfilter" == $type) {
-                if (empty($email) && empty($first_name) && empty($last_name) && empty($creditcard) && empty($phone_number) && empty($ip) && empty($address_1) && empty($address_2)) {
-                    $ajax_status["mess"] = "<span class='btn_disabled'>Filter fields empty..</span>";
-                    $ajax_status["status"] = true;
-                } else {
-                    $submitfilters_blacklist_customers = USER::submitfilters_blacklist_customers($email, $first_name, $last_name, $phone_number, $ip, $address_1, $address_2, $creditcard);
-
-                    if ($submitfilters_blacklist_customers) {
-                        if ("exists" === $submitfilters_blacklist_customers) {
-                            $ajax_status["mess"] = "<span class='btn_disabled'>Filter already exist..</span>";
-                            $ajax_status["status"] = true;
-                        } else {
-                            $ajax_status["mess"] = "<span class='btn_enabled'>Filter Successfully Added</span>";
-                            $ajax_status["status"] = true;
-                        }
-                    } else {
-                        $ajax_status["mess"] = "<span class='btn_disabled'>Filter Added Failed. Please try again</span>";
-                        $ajax_status["status"] = false;
-                    }
-                }
-
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            }
-
-            $ajax_status["r"] = $search_blacklist_customers;
-            $ajax_status["status"] = true;
-
-            break;
-
-        case 'no_result_newsletter_revised':
-            $email = SYSTEM::get_request_value("email", "", "POST");
-            if (! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $sendy = SYSTEM::loadsendy();
-                $sendy->setListId(SENDY_LIST_NO_RESULTS_SEARCHES_REVISED);
-                $sendy->subscribe(array(
-                    'email' => $email,
-                ));
-
-                if (! $user_id) {
-                    foreach ($_SESSION["add_deep_search_email"] as $index => $row) {
-                        $insert_data = array (
-                            "email" => $email,
-                            "query" => $row,
-                            "params" => $_SESSION["last_search_params"],
-                            "type" => $index,
-                            "status" => 0
-                        );
-                        Search::add_no_results_search($insert_data);
-                    }
-                    $_SESSION['no_result_funnel_step'] = $_SESSION['no_result_funnel_step'] + 1;
-                    $data["id"] = $_SESSION['no_result_funnel_id'];
-                    $data["option"] = 1;
-                    $data["email"] = $email;
-                    Search::no_results_tracking($_SESSION['no_result_funnel_step'], $data);
-                    unset($_SESSION["add_deep_search_email"]);
-                }
-
-                $ajax_status["status"] = true;
-            }
-            break;
-
-        case 'unclaimed_check':
-            header("Content-Type: application/json");
-
-            $result = false;
-            if (!empty($_SESSION["unclaimed-fund-landing"]["status"]) && $_SESSION["last_search_type"] == SEARCH_TYPE_NAME) {
-                $last_search_params = $_SESSION["last_search_params"];
-                /** Check if empty **/
-                foreach ($last_search_params as $last_search_param) {
-                    if (empty($last_search_param)) {
-                        die();
-                    }
-                }
-                $unclaimedFunds = UnclaimedFunds::get_unclaimed_exact_data(
-                    $last_search_params["first_name"],
-                    $last_search_params["last_name"],
-                    $last_search_params["state"]
-                );
-                $unclaimedFunds = count($unclaimedFunds);
-                if ($unclaimedFunds > 0) {
-                    $_SESSION["unclaimed-fund-landing"]["found"] = true;
-                    $_SESSION["unclaimed-fund-landing"]["data"] = $last_search_params;
-                // $_SESSION["unclaimed-fund-landing"]["status"] = false;
-
-                    $result["status"] = true;
-                    $result["count"] =  $unclaimedFunds;
-                    $result["name"] =  $last_search_params["first_name"] . " " . $last_search_params["last_name"];
-                }
-                $from_unclaimed_fund_landing = true;
-            }
-            echo json_encode($result);
-            exit();
-
-        case 'pwned_check':
-            header("Content-Type: application/json");
-            $result = new \stdClass();
-            $result->status = false;
-
-            $email = SYSTEM::get_request_value("email", "", "POST");
-
-            if (empty($email)) {
-                $email = $_SESSION["last_search_params"]["email"];
-            }
-
-            if (! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            }
-
-            $result->email = $email;
-            $pwned = PWNED::check_PWNED_status($email);
-            if (!empty($pwned)) {
-                $result->status = true;
-                $result->count = $pwned;
-            }
-
-            echo json_encode($result);
-            die();
-
-        case 'pwned_email_list':
-            header("Content-Type: application/json");
-            $json_output = $input_post->json ? true : false;
-            $result = new \stdClass();
-            $result->status = false;
-            $emails = SYSTEM::get_request_value("email_list", "", "POST");
-            $records = SYSTEM::get_request_value("record_dates", "", "POST");
-
-            /* Convert Email List to PWNED friendly array */
-            $PWNED_Email_list = [];
-            $result->pwned_emails = false;
-
-            $result->html = "";
-            foreach ($emails as $key => $res_email) {
-                sleep(2);
-                $pwned_obj = PWNED::check_PWNED($res_email);
-                if ($pwned_obj) {
-                    $result->pwned_emails = true;
-                }
-                $PWNED_Email_list[] = $pwned_obj ?: [ "email" => $res_email ];
-            }
-
-            if ($json_output) {
-                $result->pwned = $PWNED_Email_list;
-            } else {
-                foreach ($PWNED_Email_list as $key => $pwned) {
-                    $html = "";
-                    if (is_object($pwned)) {
-                            $sitehtml = "";
-                        foreach ($pwned->sites as $pwned_sites) {
-                            $sitehtml .= sprintf("<tr><td><strong>%s</strong><img src='%s' width='100%%' /></td><td><p>%s</p><p><strong>Compromised data:</strong> %s</p></td></tr>", $pwned_sites->Title, $pwned_sites->LogoPath, $pwned_sites->Description, implode(", ", $pwned_sites->Compromised_Data));
-                        }
-
-                            $sitecount = count($pwned->sites);
-                        if ($sitecount == 1) {
-                            $breach_summary_title = 'Reported in <span class="badge">1</span> incident';
-                            $breach_summary_description = 'This email was involved in a data breach incident on ' . $pwned->firstDate . '.';
-                        } elseif ($sitecount > 1) {
-                            $breach_summary_title = 'Reported in <span class="badge">' . $sitecount . '</span> incidents';
-                            $breach_summary_description = 'This email was involved in ' . $sitecount . ' data breach incidents, the earliest of which was ' . $pwned->firstDate . ' and the latest of which was ' . $pwned->lastDate . '.';
-                        }
-
-                            $html = sprintf('<div class="col-md-12 pwned selectable  limited-result" data-query="">
-                                <div class="row pwned-titlebar">
-                                    <div class="col-sm-6">
-                                        %s
-                                    </div>
-                                    <div class="col-sm-6">
-                                            <p class=""  data-toggle="collapse" data-target="%s" aria-expanded="false">
-                                                Email Breach Summary:  <span class="break-mobile">%s</span>
-                                            </p>
-                                    </div>
-                                </div>
-                                <div class="row row-full">
-                                    <div class="col-md-4 normal">
-                                        <div class="period email">
-                                            <ul>
-                                                <li>%s %s</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                     <div class="col-md-7">
-                                            <div class="pwned-summary">%s</div>
-                                    </div>
-                                    <div class="col-md-1">
-                                        <a class="pwned-email-list-btn collapsed"  data-toggle="collapse" data-target="%s" aria-expanded="false" href="#!">View</a>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-12 collapse" id="%s">
-                                        <table>
-                                            <tr><th width="20%%" >Website</th><th  width="80%%">Data Breach</th></tr>
-                                            %s
-                                        </table>
-                                    </div>
-
-                                </div>
-                                 </div>', $emails[$key], "#pwtable-" . $key, $breach_summary_title, empty($records[$key]["first_seen"]) ? '' : "First Seen: " . $records[$key]["first_seen"], empty($records[$key]["last_seen"]) ? '' : "| Last Seen: " . $records[$key]["last_seen"], $breach_summary_description, "#pwtable-" . $key, "pwtable-" . $key, $sitehtml);
-                    } else {
-                        $html = sprintf('<div class="col-md-12 pwned selectable  limited-result" data-query="">
-                                    <div class="row pwned-titlebar">
-                                        <div class="col-sm-6">
-                                            %s
-                                        </div>
-                                        <div class="col-sm-6">
-                                                <p>
-                                                    <span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> Not Found in any Reported Data Breach
-                                                </p>
-                                        </div>
-                                    </div>
-                                    <div class="row row-full">
-                                        <div class="col-md-12 normal">
-                                            <div class="period email">
-                                                <ul>
-                                                    <li>%s %s</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                 </div>', $emails[$key], empty($records[$key]["first_seen"]) ? '' : "First Seen: " . $records[$key]["first_seen"], empty($records[$key]["last_seen"]) ? '' : "| Last Seen: " . $records[$key]["last_seen"]);
-                    }
-
-                        $result->html .= $html;
-                }
-            }
-
-                $result->status = true;
-
-                echo json_encode($result);
-            die();
-
-        case 'feedback_info':
-            $period = SYSTEM::get_request_value("period", "", "POST");
-            $data = CustomerFeedback::get_avg_feedback_2($period);
-            $ajax_status["status"] = true;
-            $ajax_status['cfb_info'] = $data;
-            break;
-        case 'feedback_info_by_type':
-            $type = SYSTEM::get_request_value("report_type", "", "POST");
-            $period = SYSTEM::get_request_value("period", "", "POST");
-            $data = CustomerFeedback::get_avg_feedback_2($period, $type);
-            $ajax_status["status"] = true;
-            $ajax_status['cfb_info'] = $data;
-            break;
-        case 'feedback_info_filter':
-            $from = SYSTEM::get_request_value("from", "", "POST");
-            $to = SYSTEM::get_request_value("to", "", "POST");
-            $type = SYSTEM::get_request_value("report_type", "", "POST");
-            $data = CustomerFeedback::get_avg_feedback_filtered($from, $to, $type);
-            $ajax_status["status"] = true;
-            $ajax_status['cfb_info'] = $data;
-            break;
-        case 'feedback_covid_window':
-            $feedback = SYSTEM::get_request_value("feedback", "", "POST");
-            $status = LOCATIONS::update_user_feedback($feedback);
-            $ajax_status["status"] =  $status;
-            break;
-        case 'agree_restrictions':
-            User::set_restrictions_agreement($user_id);
-            $early_warn = true;
-            $ajax_status["status"] = true;
-            break;
-        case 'cancellation_info':
-            $year = SYSTEM::get_request_value("year", "", "POST");
-            $year_to = SYSTEM::get_request_value("year_to", "", "POST");
-            $data = CustomerFeedback::get_cancellation_trend($year, $year_to);
-            $ajax_status["status"] = true;
-            $ajax_status['ct_info'] = $data;
-            break;
-        case 'unclaimed_popup':
-            User::set_meta($user_id, 'unclaimed_popup', 1);
-            $_SESSION["user"]["unclaimed_popup"] = 1;
-            $ajax_status["status"] = true;
-            break;
-        case 'ras_popup':
-            User::set_meta($user_id, 'ras_popup', 1);
-            $_SESSION["user"]["ras_popup"] = 1;
-            $ajax_status["status"] = true;
-            break;
-        case 'radius_info':
-            $zip = SYSTEM::get_request_value("zip", "", "POST");
-            $data = MelissaDataRAS::fetch_radus_data($zip);
-            $ajax_status["status"] = true;
-            $ajax_status["radius_info"] = $data;
-            break;
-        case 'ras_update':
-            $address = SYSTEM::get_request_value("address", "", "POST");
-            $msd = new melissadata\MelissaDataRAS(MELISSADATA_API_KEY);
-            $msd->update_report($address);
-            $ajax_status["status"] = true;
-
-            break;
-        case 'customer_feedback_landing':
-            $header = "UserID,User Type,Design,How does it feel,How Much trust,Next Section,Where are the eyes drawn,Will get from using this site,Date\n";
-
-            $design = str_replace('"', "'", SYSTEM::get_request_value("design", "", "POST"));
-            $how_feel = str_replace('"', "'", SYSTEM::get_request_value("how_feel", "", "POST"));
-            $trust = str_replace('"', "'", SYSTEM::get_request_value("trust", "", "POST"));
-            $nextsection = str_replace('"', "'", SYSTEM::get_request_value("nextsection", "", "POST"));
-            $eyes_drawn = str_replace('"', "'", SYSTEM::get_request_value("eyes_drawn", "", "POST"));
-            $what_you_will_get = str_replace('"', "'", SYSTEM::get_request_value("what_you_will_get", "", "POST"));
-            $usertype = str_replace('"', "'", SYSTEM::get_request_value("usertype", "", "POST"));
-            $usertype = preg_replace('/[^A-Za-z0-9 \-_]+/', '', $usertype);
-
-            $date = date('Y-m-d H:i:s');
-
-            //$data = str_replace("\n", " ", "$user_id,$design,$how_feel,$trust,$nextsection,$eyes_drawn,$what_you_will_get,$date" ) . "\n";
-            $data = "$user_id,\"$usertype\",\"$design\",\"$how_feel\",\"$trust\",\"$nextsection\",\"$eyes_drawn\",\"$what_you_will_get\",$date\n";
-
-            $FileName =  ABS_PATH . "landing_page_feedback" . DIRECTORY_SEPARATOR .  "customer_feedback_landing_{$usertype}.csv";
-            if (file_exists($FileName)) {
-                file_put_contents($FileName, $data, FILE_APPEND);
-            } else {
-                file_put_contents($FileName, $header . $data);
-            }
-
-            $ajax_status["message"] = "Form Submitted Successfully. Thank you for your feedback.";
-
-            break;
-
-        case 'sv_feedback':
-            $feedback = SYSTEM::get_request_value("feedback", "", "POST");
-            $report_id = SYSTEM::get_request_value("report_id", "", "POST");
-            $status = CustomerFeedback::add_sv_feedback($report_id, $feedback);
-            $ajax_status["status"] =  $status;
-            break;
-        case 'no_feedback':
-            $feedback = SYSTEM::get_request_value("feedback", "", "POST");
-            $report_id = SYSTEM::get_request_value("report_id", "", "POST");
-            $status = CustomerFeedback::add_name_origins_feedback($report_id, $feedback);
-            $ajax_status["status"] =  $status;
-            break;
-
-        case 'js_error':
-            //if ( strpos( $input_post->data, 'Script error' ) !== false ) break;
-            $data = json_decode($input_post->data, true);
-
-            if (! empty($data["error"])) {
-                Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "JS error=" . $data["error"] . "error_file=" . $data["file"], ["errors", "JS error", "{$data["file"]}::{$data["error"]}" ]);
-            }
-
-            $fp = fopen(TEMP_PATH . "js_error_log.txt", "a");
-            fputcsv($fp, array_merge([ date("Y-m-d H:i:s") ], $data));
-            fclose($fp);
-
-            $ajax_status["status"] =  true;
-            break;
-        case 'ras_save':
-            $address = $input_post->address;
-            $state = ucfirst($input_post->state);
-            $city = $input_post->city;
-            $zip = $input_post->zip;
-            $lat = $input_post->lat;
-            $lng = $input_post->lng;
-            $_SESSION["ras_data"] = ["address" => $address,"state" => $state,"city" => $city,"zip" => $zip,"lat" => $lat,"lng" => $lng];
-            // CSI-5066 home name baseline
-            if (isset($_SESSION["ab_baselines_home_name"]) && !isset($_SESSION["step_zero_ras_home"])) {
-                $_SESSION["ab_baselines_home_name"]->track_event("1_2_name_address_other", SYSTEM::get_device_type());
-                $_SESSION["step_zero_ras_home"] = true;
-            }
-            // CSI-5066 home name baseline
-            break;
-        case 'recaptcha_link':
-            $link = $input_post->link;
-            $_SESSION["recaptcha_link"] = $link;
-            break;
-        case 'behavior':
-            $section = SYSTEM::get_request_value("section");
-
-
-            if ($section == "get_filters") {
-                $data = Behavior::get_rebiuld_heatmap_filters($filter_type, $filter_level);
-                $ajax_status["data"] = $data;
-                $template = ! empty($_SESSION["heatmap_filters"][1]["data"]["template_version"]) ? $_SESSION["heatmap_filters"][1]["data"]["template_version"] : "";
-                $ajax_status["url"] = ! empty($_SESSION["heatmap_filters"][1]["url"]) ? BASE_URL . $_SESSION["heatmap_filters"][1]["data"]["url"] . "?behavior_trk_heatmap=true&template={$template}&" . ( ! empty($_SESSION["heatmap_filters"][1]["data"]["query_string"]) ? $_SESSION["heatmap_filters"][1]["data"]["query_string"] : "" ) : "";
-                $ajax_status["width"] =  ! empty($_SESSION["heatmap_filters"][2]["selected"]) ? $_SESSION["heatmap_filters"][2]["selected"] : "";
-                //print_r($_SESSION["heatmap_filters"][1]);die;
-
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            } elseif ($section == "heatmap_run_filter") {
-                $filter_type = $input_post->v;
-                $filter_level = $input_post->l;
-
-                $data = Behavior::run_heatmap_filters($filter_type, $filter_level);
-                $ajax_status["data"] = $data;
-                $template = ! empty($_SESSION["heatmap_filters"][1]["data"]["template_version"]) ? $_SESSION["heatmap_filters"][1]["data"]["template_version"] : "";
-                $ajax_status["url"] = ! empty($_SESSION["heatmap_filters"][1]["url"]) ? BASE_URL . $_SESSION["heatmap_filters"][1]["data"]["url"] . "?behavior_trk_heatmap=true&template={$template}&" . ( ! empty($_SESSION["heatmap_filters"][1]["data"]["query_string"]) ? $_SESSION["heatmap_filters"][1]["data"]["query_string"] : "" ) : "";
-                $ajax_status["width"] =  ! empty($_SESSION["heatmap_filters"][2]["selected"]) ? $_SESSION["heatmap_filters"][2]["selected"] : "";
-                //print_r($_SESSION["heatmap_filters"][1]);die;
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            } elseif ($section == "heatmap_topbar_disable") {
-                $_SESSION["heatmap_filters"] = [];
-
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            } elseif ($section == "heatmap_topbar") {
-                $page = $input_post->page;
-
-                $data = Behavior::get_heatmap_admin_topbar($page);
-                $ajax_status["data"] = $data;
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            } elseif ($section == "heatmap") {
-                $filter_type = $input_post->v;
-                $filter_level = $input_post->l;
-                $data = Behavior::get_heatmap_filters($filter_type, $filter_level);
-                $ajax_status["data"] = $data;
-                $ajax_status["url"] = ! empty($_SESSION["heatmap_filters"][1]["url"]) ? BASE_URL . $_SESSION["heatmap_filters"][1]["data"]["url"] . "?behavior_trk_heatmap=true&" . ( ! empty($_SESSION["heatmap_filters"][1]["data"]["query_string"]) ? $_SESSION["heatmap_filters"][1]["data"]["query_string"] : "" ) : "";
-                $ajax_status["template"] = ! empty($_SESSION["heatmap_filters"][1]["data"]["template_version"]) ? $_SESSION["heatmap_filters"][1]["data"]["template_version"] : "";
-
-                header("Content-Type: application/json");
-                echo json_encode($ajax_status);
-                die();
-            } elseif (array_key_exists($input_post->type, $behavior_actions) && $input_post->_v == $visitor_key) {
-                if ("g" == $input_post->type) {
-                    $behavior_actions_data["action_time"] = date("Y-m-d H:i:s", ( $input_post->time / 1000 ));
-                    Behavior::log_action($behavior_actions[$input_post->type], $input_post->_e, $behavior_actions_data);
-                } else {
-                    $behavior_actions_data = [];
-                    $element_data = [];
-                    $behavior_actions_data["action_time"] = date("Y-m-d H:i:s", ( $input_post->time / 1000 ));
-                    $behavior_actions_data["url"] = $input_post->url;
-                    $behavior_actions_data["url_type"] = $input_post->url_type;
-                    $behavior_actions_data["url_template"] = $input_post->url_template;
-                    $behavior_actions_data["cursor_x"] = $input_post->x;
-                    $behavior_actions_data["cursor_y"] = $input_post->y;
-                    $behavior_actions_data["element_left"] = $input_post->l;
-                    $behavior_actions_data["element_top"] = $input_post->t;
-                    $behavior_actions_data["viewport_width"] = $input_post->winw;
-                    $behavior_actions_data["viewport_height"] = $input_post->winh;
-
-                    $element_data["element"] = $input_post->tr_node;
-                    $element_data["element_class"] = $input_post->tr_class;
-                    $element_data["element_id"] = $input_post->tr_id;
-                    $element_data["element_text"] = $input_post->tr_text;
-                    $element_data["element_placeholder"] = $input_post->tr_placeholder;
-                    $element_data["element_title"] = $input_post->tr_title;
-                    $element_data["element_src"] = $input_post->tr_src;
-                    $element_data["element_href"] = $input_post->tr_href;
-                    $element_data["element_name"] = $input_post->tr_name;
-                    $element_data["element_type"] = $input_post->tr_type;
-                    $element_data["attributes"] = $input_post->attr;
-
-                    if ($behavior_tracking_activated) {
-                        $behaviordata = Behavior::log_action($behavior_actions[$input_post->type], "", $behavior_actions_data, $element_data);
-                        $ajax_status["page"] = $behaviordata["page"];
-                    }
-                }
-            }
-
-            break;
-        case 'reset_cr_search':
-               unset($_SESSION["cr_search"]);
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_four_cr"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("5_dont_search_cr", SYSTEM::get_device_type());
-                $_SESSION["cr_choice"] = "cancel";
-            }
-            break;
-        case "criminal_rec_donot_show":
-            $value = $_POST["value"];
-            user::set_criminal_records_popup($value);
-        case "cr_set":
-            $ajax_status["data"] = $_SESSION["cr_search_filters"] ;
-            $ajax_status["status"] = true;
-            break;
-        case "ccpa_request_update":
-            CCPA_Requests::update_records($input_post);
-            break;
-        case "ccpa_request_status":
-            $id = $input_post->id;
-            $status = $input_post->status;
-            $note = $input_post->note;
-            CCPA_Requests::update_status($id, $status, $note);
-            break;
-        case "ccpa_duplicate":
-            $id = $input_post->id;
-             $id = trim($id, "duplicate_");
-            CCPA_Requests::duplicate_request($id);
-            break;
-        case "set_link":
-            $link = $_POST["link"];
-            $_SESSION["redirect_link"] = $link;
-            break;
-        case "privacy_lock_what_is_this":
-            User::set_meta($user_id, "privacy_lock_close_description", 1);
-            break;
-        case 'privacy_lock':
-            $val = SYSTEM::get_request_value("v", "");
-            $email_index = SYSTEM::get_request_value("val", "");
-
-            if (empty($active_plans)) {
-                $ajax_status["status"] = true;
-                $ajax_status["failed"] = true;
-            } else {
-                $ajax_status["m"] = User::change_privacy_lock_status($val, $email_index);
-                if ($val == 2) {
-                    $privacy_lock_emails = ! empty($user_data["privacy_lock_emails"]) ? explode(",", $user_data["privacy_lock_emails"]) : [ $user_data["email"] ];
-                    if ($privacy_lock_activated && ! empty($privacy_lock_emails[$email_index][0])) {
-                        //foreach( $privacy_lock_emails as $pl_email ){
-                        PWNED::save_user_pawned_data($privacy_lock_emails[$email_index][0]);
-                        //}
-                    }
-                }
-            }
-            $ajax_status["status"] = true;
-            break;
-        case 'criminal_record_search':
-            if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_four_cr"])) {
-                $_SESSION["ab_cr_signedout_2022"]->track_event("6_searched_cr", SYSTEM::get_device_type());
-            }
-            $full_name = $input_post->name;
-            $full_name_arr = explode(" ", $full_name);
-            $last_name = array_pop($full_name_arr);
-            $first_name = reset($full_name_arr);
-            $state = $input_post->state;
-            $params =  [
-            "first_name" => $first_name,
-            "last_name" => $last_name,
-            "state" => $state,
-            "search_type" => "CriminalSearch",
-            "fields" => '["criminal"]',
-            "dob" => $dob,];
-
-            // Fetch Records from the API
-            $ds_idi = new \DataSource\IDI(IDI_CLIENT_ID, IDI_SECRET_KEY, DEBUG);
-            $records = $ds_idi->runSearch($ds_idi->mapParams($params));
-            CriminalRecords::save($records["data"]);
-            $filters = [
-            "full_name" => $first_name . " " . $last_name ,
-            "state" => $state,
-            "dob" => $dob,
-            ];
-            $records = CriminalRecords::search($filters);
-            if ($records) {
-                $filters["count"] = count($records);
-                $token = md5(uniqid());
-                $_SESSION["cr_tokens"][ $token ] = [
-                "query" => $full_name,
-                "filters" => $filters,
-
-                ];
-                $plan_id = 0;
-                $purchase_status = 0;
-                $user_id = 0;
-                $existing_id = CriminalRecords::get_id_if_report_exists($user_id, $_SESSION["cr_tokens"][ $token ]["filters"], $user_data["user_level"]);
-                if ($existing_id == 0) {
-                    $id = CriminalRecords::add_user_search($user_id, $plan_id, $_SESSION["cr_tokens"][ $token ]["filters"], $purchase_status, $user_data["user_level"]);
-                } else {
-                    $id = $existing_id;
-                }
-                $_SESSION["cr_count"] =  count($records);
-                $_SESSION["cr_id"] =  $id;
-                $_SESSION["add_cr_to_new_user"] = true;
-                $ajax_status["token"] = $token;
-                $ajax_status["count"] =  $_SESSION["cr_count"];
-                $ajax_status["status"] = true;
-
-
-                if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_four_cr"])) {
-                    $_SESSION["ab_cr_signedout_2022"]->track_event("8_results_cr", SYSTEM::get_device_type());
-                    $_SESSION["step_results_cr"] = true;
-                    $_SESSION["cr_choice"] = "results";
-                }
-            } else {
-                if (isset($_SESSION["ab_cr_signedout_2022"]) && isset($_SESSION["step_four_cr"])) {
-                    $_SESSION["ab_cr_signedout_2022"]->track_event("7_no_results_cr", SYSTEM::get_device_type());
-                    $_SESSION["cr_choice"] = "no_results";
-                }
-            }
-            break;
-        case 'privacy_lock_feedback':
-            User::set_meta($user_id, "privacy_lock_feedback", $input_post->feedback);
-            $ajax_status["status"] = true;
-            break;
-        case 'resend_link':
-            User::send_verification_link($user_id, $user_data["email"], true);
-            $ajax_status["status"] = true;
-            break;
-        case 'ccpa_refresh':
-            CCPA_Requests::get_emails();
-            $ajax_status["status"] = true;
-            break;
-        case "ccpa_extend":
-            $id = $input_post->id;
-             $id = trim($id, "extend_");
-            CCPA_Requests::extend_request($id);
-            break;
-
-        case 'chat':
-            if (trim($post_data["message"]) == "" && ( count($_FILES["file"]["tmp_name"]) == 0 )) {
-                die();
-            }
-
-            if (count($_FILES["file"]["name"]) == "0") {
-                $file_url = "";
-            } else {
-                $img_extension = array_pop(explode(".", $_FILES["file"]["name"]));
-                if (preg_match("/jpe?g|png|gif|mp[3|4]|avi|docx?|txt|rtf|pdf/i", $img_extension)) {
-                    $file_url = "chat/{$user_id}/{$id}/" . time() . "." . strtolower($img_extension);
-                    $upload_path = UPLOADS_PATH . $file_url;
-                    @mkdir(dirname($upload_path), 0755, true);
-                    move_uploaded_file($_FILES["file"]["tmp_name"], $upload_path);
-                } else {
-                    $file_url = "";
-                }
-            }
-
-                    $saved_data['indepth_id'] = $id;
-                    $saved_data['user_id'] = $user_id;
-                    $saved_data['message'] = $post_data['message'];
-                    $saved_data['file'] = $file_url;
-                    $get_indepth_data = Membership::add_chat($saved_data);
-                    $ajax_status["status"] = true;
-                    $ajax_status["msg"] = "test";
-            break;
-
-        case 'chat_update':
-            $ajax_status["status"] = false;
-
-            if (isset($post_data["last_id"])) {
-                if ($post_data["chat_data"] = Membership::get_chat($id, $post_data["last_id"])) {
-                    $ajax_status["id"] = $id;
-                    $ajax_status["msg"] = "chat_update_test";
-                    $ajax_status["data"] = $post_data["chat_data"];
-                    $ajax_status["status"] = true;
-                }
-            }
-
-            break;
-        case "agree_assoc":
-            $id = $input_post->id;
-            User::set_assoc_acc_cancel_($id);
-            break;
-
-        case "ris_crop_popup":
-            $id = $input_post["id"];
-            User::set_ris_crop_popup($user_id, $id);
-            $ajax_status["status"] = true;
-            break;
-
-        case "run_image_url":
-            if (255 == $user_data["user_level"] && Search::validate_image_url($input_post->image_url)) {
-                /* $user_upload_path = UPLOADS_PATH . $user_id . DIRECTORY_SEPARATOR;
-                if ( ! file_exists( $user_upload_path ) ) @mkdir( $user_upload_path );
-
-                $basename = md5( time() ) . mt_rand( 100000, 999999 );
-                $url = Search::file_get_contents_curl( $input_post->image_url );
-
-                $filename = $user_upload_path . $basename . basename( $url );
-                file_put_contents( $filename , $url ); */
-
-                $search_params = array (
-                "image_urls" => [ $input_post->image_url ],
-                "type" => SEARCH_TYPE_IMAGE,
-                "tpd_request" => 1
-                );
-                Search::queue_image_search($search_params);
-                $ajax_status["url"] = PAGE_URL_REVERSE_IMAGE_SEARCH . "?search_history=1";
-                $ajax_status["status"] = true;
-            } else {
-                $ajax_status["status"] = false;
-            }
-
-            break;
-
-        case "optout_ris_status":
-            $id = $input_post["id"];
-            $status = $input_post["status"];
-            $optout_date = date('Y-m-d');
-            $optout_by = $user_data['email'];
-            $phash = $input_post["phash"];
-
-            Optout::update_ris_optout_status($status, $optout_date, $optout_by, $id);
-            Optout::update_image_results_optout(( $status == 2 ? 0 : $status ), $phash);
-
-            $ajax_status["status"] = true;
-            break;
-
-        case "update_ris_notification":
-            $id = $input_post["id"];
-            $status = $input_post["status"];
-            Search::update_ris_notification($id, $status);
-            $ajax_status["status"] = true;
-            break;
-
-        case "ris_notification_close":
-            $id = $input_post["id"];
-            Search::ris_notification_close($id, 1);
-            $ajax_status["status"] = true;
-            break;
-
-        case "check_is_ris_pending":
-            $id = $input_post["id"];
-            $result = Search::check_is_ris_pending($id);
-            $ajax_status["progress"] = Search::ris_get_progress($id);
-
-            if ($input_post["type"] == "intermediate") {
-                $last_search = User::search_history_ris_intermediate($user_id, 0, 1);
-                $additional_info = explode("|", $last_search[0]["additional_info"]);
-
-                $ajax_status["exact"] = $additional_info[1];
-                $ajax_status["similar"] = $additional_info[2];
-            }
-
-            if ($result) {
-                $ajax_status["status"] = true;
-            } else {
-                $ajax_status["status"] = false;
-                Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "RIS search end", [ "behavior_reporting", "RIS_behavior", "sid: {$id}" ]);
-            }
-            break;
-
-        case "get_ris_pending":
-            $id = $input_post["id"];
-            $result = Search::get_ris_pending($id);
-
-            $ajax_status["opt_out"] = $result["opt_out"];
-            $ajax_status["pending"] = $result["pending"];
-            $ajax_status["status"] = true;
-            break;
-
-        case "block_domain":
-            $id = $input_post["id"];
-            $status = $input_post["status"];
-            OptOut::update_domain_in_blocked_list($id, $status);
-            $ajax_status["status"] = true;
-            break;
-
-        case "faq_cancel_subscription":
-            $_SESSION["faq_cancel_subscription"] = true;
-            $ajax_status["status"] = true;
-            break;
-
-        case "faq_cancel_subscription_unset":
-            if (isset($_SESSION["faq_cancel_subscription"])) {
-                unset($_SESSION["faq_cancel_subscription"]);
-            }
-            $ajax_status["status"] = true;
-            break;
-
-        case 'ris_tips_popup':
-            $ajax_status["status"] = true;
-            if (! empty($user_id) && ! empty(SYSTEM::request("setting"))) {
-                $res = user::set_meta($user_id, 'disable_ris_tips_popup', ( SYSTEM::request("setting") == 'true' ) ? 1 : 0);
-            }
-
-        case "block_boot":
-            OptOut::block_data_id_for_phone_or_email($input_post->value);
-            break;
-
-
-        case "get_ris_current_image_count":
-            $id = $input_post["id"];
-            $total_result_count = $input_post["total_result_count"];
-
-            $result = Search::get_image_results($id);
-
-            $facial_recognition = $duplicates = $possible_matches = [];
-            foreach ($result as &$image) {
-                if (empty($image["source"])) {
-                    continue;
-                }
-
-                if (! empty($image["flags"]) && ( $image["flags"] & RESULT_FLAG_FACIAL_RECOGNITION )) {
-                    $facial_recognition[] = $image;
-                } else {
-                    if ($image["score"] >= SCORE_EXACT_MATCH) {
-                        $duplicates[] = $image;
-                    } else {
-                        $possible_matches[] = $image;
-                    }
-                }
-            }
-
-            $fg_facial_recognition = [];
-            $fg_duplicates = [];
-            $fg_possible_matches = [];
-            $fi_facial_recognition = [];
-            $fi_duplicates = [];
-            $fi_possible_matches = [];
-
-            foreach ($facial_recognition as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_facial_recognition[] = $facial_recognition[$index];
-                } else {
-                    $fi_facial_recognition[] =  $facial_recognition[$index];
-                }
-            }
-            foreach ($duplicates as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_duplicates[] = $duplicates[$index];
-                } else {
-                    $fi_duplicates[] =  $duplicates[$index];
-                }
-            }
-            foreach ($possible_matches as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_possible_matches[] = $possible_matches[$index];
-                } else {
-                    $fi_possible_matches[] =  $possible_matches[$index];
-                }
-            }
-            $fg_facial_recognition = array_values($fg_facial_recognition);
-            $fg_duplicates = array_values($fg_duplicates);
-            $fg_possible_matches = array_values($fg_possible_matches);
-
-            $facial_recognition = array_values($fi_facial_recognition);
-            $duplicates = array_values($fi_duplicates);
-            $possible_matches = array_values($fi_possible_matches);
-
-            array_multisort(array_column($fg_facial_recognition, 'phash_face_distance'), SORT_ASC, $fg_facial_recognition);
-            array_multisort(array_column($fg_duplicates, 'phash_face_distance'), SORT_ASC, $fg_duplicates);
-            array_multisort(array_column($fg_possible_matches, 'phash_face_distance'), SORT_ASC, $fg_possible_matches);
-
-            array_multisort(array_column($facial_recognition, 'phash_face_distance'), SORT_ASC, $facial_recognition);
-            array_multisort(array_column($duplicates, 'phash_face_distance'), SORT_ASC, $duplicates);
-            array_multisort(array_column($possible_matches, 'phash_face_distance'), SORT_ASC, $possible_matches);
-
-            $total_fg_count = count($fg_facial_recognition) + count($fg_duplicates) + count($fg_possible_matches);
-            $total_full_image_count = count($facial_recognition) + count($duplicates) + count($possible_matches);
-
-            $ajax_status["total_result_count"] = count($result);
-            $ajax_status["full_image_count"] = $total_full_image_count;
-            $ajax_status["total_fg_count"] = $total_fg_count;
-
-            $ajax_status["duplicates"] = count($duplicates);
-            $ajax_status["possible_matches"] = count($possible_matches);
-
-            $ajax_status["fg_duplicates"] = count($fg_duplicates);
-            $ajax_status["fg_possible_matches"] = count($fg_possible_matches);
-
-            $ajax_status["total_result_count"] = count($result);
-            $ajax_status["diff"] = count($result) - $total_result_count;
-
-            $ajax_status["status"] = true;
-            $ajax_status["stop_flg"] = Search::get_stopflg_image_search($id);
-            $ajax_status["progress"] = Search::ris_get_progress($id);
-            break;
-
-        case "get_ris_current_images":
-            $id = $input_post["id"];
-            $limit = $input_post["limit"];
-            $sort_by_website = $input_post["sort_by_website"];
-            $force_old_scoring = false;
-            $result = Search::get_image_results($id, 0, $limit);
-
-            $facial_recognition = $duplicates = $possible_matches = [];
-            foreach ($result as &$image) {
-                if (empty($image["source"])) {
-                    continue;
-                }
-
-                if (! empty($image["flags"]) && ( $image["flags"] & RESULT_FLAG_FACIAL_RECOGNITION )) {
-                    $facial_recognition[] = $image;
-                } else {
-                    if ($image["score"] >= SCORE_EXACT_MATCH) {
-                        $duplicates[] = $image;
-                    } else {
-                        $possible_matches[] = $image;
-                    }
-                }
-            }
-
-            $fg_facial_recognition = [];
-            $fg_duplicates = [];
-            $fg_possible_matches = [];
-            $fi_facial_recognition = [];
-            $fi_duplicates = [];
-            $fi_possible_matches = [];
-
-            foreach ($facial_recognition as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_facial_recognition[] = $facial_recognition[$index];
-                } else {
-                    $fi_facial_recognition[] =  $facial_recognition[$index];
-                }
-            }
-            foreach ($duplicates as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_duplicates[] = $duplicates[$index];
-                } else {
-                    $fi_duplicates[] =  $duplicates[$index];
-                }
-            }
-            foreach ($possible_matches as $index => $row) {
-                if ($row["face_matches"] == 1) {
-                    $fg_possible_matches[] = $possible_matches[$index];
-                } else {
-                    $fi_possible_matches[] =  $possible_matches[$index];
-                }
-            }
-            $fg_facial_recognition = array_values($fg_facial_recognition);
-            $fg_duplicates = array_values($fg_duplicates);
-            $fg_possible_matches = array_values($fg_possible_matches);
-
-            $facial_recognition = array_values($fi_facial_recognition);
-            $duplicates = array_values($fi_duplicates);
-            $possible_matches = array_values($fi_possible_matches);
-
-            if ($force_old_scoring) {
-                array_multisort(array_column($fg_facial_recognition, 'phash_face_distance'), SORT_ASC, $fg_facial_recognition);
-                array_multisort(array_column($fg_duplicates, 'phash_face_distance'), SORT_ASC, $fg_duplicates);
-                array_multisort(array_column($fg_possible_matches, 'phash_face_distance'), SORT_ASC, $fg_possible_matches);
-
-                array_multisort(array_column($facial_recognition, 'phash_face_distance'), SORT_ASC, $facial_recognition);
-                array_multisort(array_column($duplicates, 'phash_face_distance'), SORT_ASC, $duplicates);
-                array_multisort(array_column($possible_matches, 'phash_face_distance'), SORT_ASC, $possible_matches);
-            }
-
-            $data_sets = [
-            "user" => [
-                "caption" => "Boosted Image Results",
-                "count" => count($facial_recognition),
-                "data" => &$facial_recognition,
-                "compare" => true,
-                "srot_order" => 4,
-                "description" => "These image results were found using our boosting service, which uses facial features to find more images online that may match the image you uploaded."
-            ],
-            "image-highsimilar" => [
-                "caption" => "Exact Image Matches",
-                "count" => count($duplicates),
-                "data" => &$duplicates,
-                "compare" => false,
-                "srot_order" => 1,
-                "description" => "These image results match the main points of comparison found in your original.  (In some cases, the degrees of similarity were high enough that the algorithm included them for your review.)",
-            ],
-            "image-similar" => [
-                "caption" => "Similar Image Matches",
-                "count" => count($possible_matches),
-                "data" => &$possible_matches,
-                "compare" => true,
-                "srot_order" => 5,
-                "description" => "These image results match the main points of comparison found in your original. While it's possible there may be an exact match, in some cases the degrees of similarity are high enough the algorithm includes them for your review.",
-            ],
-            ];
-
-            $data_sets_fg = [
-            "user" => [
-                "caption" => "Boosted Face Matches",
-                "count" => count($fg_facial_recognition),
-                "data" => &$fg_facial_recognition,
-                "compare" => true,
-                "srot_order" => 3,
-            ],
-            "image-highsimilar" => [
-                "caption" => "Exact Face Matches",
-                "count" => count($fg_duplicates),
-                "data" => &$fg_duplicates,
-                "compare" => false,
-                "srot_order" => 2,
-            ],
-            "image-similar" => [
-                "caption" => "Similar Face Matches",
-                "count" => count($fg_possible_matches),
-                "data" => &$fg_possible_matches,
-                "compare" => true,
-                "srot_order" => 6,
-            ],
-            ];
-
-
-            $images_data = [];
-            $images_data_fg = [];
-
-            foreach ($data_sets as $icon => $data_set) {
-                if ($data_set["count"]) {
-                    foreach ($data_set["data"] as $index => $data) {
-                              $html_div = "";
-                              $uri = parse_url($data["ref"]);
-                              $domain = preg_replace("/^((?:[^\.]+\.){2}[^\.]+)\$/m", "\\1", $uri["host"]);
-
-                              $html_div = '<div class="col-xs-6 col-md-3 ' . str_replace(" ", "_", $data_set["caption"]) . ' img-box-list" style="display:block"  data-domain="' . $domain . '" >
-                                <div class="box-col">
-                                <div class="ris-img-blur">
-                                    <span class="si-eye-close"></span>
-                                    <p>Preview Unavailable</p>
-                                    <a data-url="' . $data["ref"] . '" onload="scf.results.image.external_func(this,scf);" class="btn">Visit Website</a>
-                                </div>
-                                    <div class="img-thumbnail" data-url="' .  $data["source"] . '"  onclick="scf.results.image.external_func(this,scf);"> 
-                                    <img src="' . $current_template_assets_url . '/images/loader-white.svg" data-src="' . SCF::imgcdn_url($data["source"]) . '" class="lazy-loader scf_ris_loader" alt="User" decoding="async" loading="lazy"/>
-                                </div> 
-                                <a href="' . $data["ref"] . '" target="_blank" data-url="' . $data["ref"] . '" onclick="scf.results.image.external_func(this,scf);" class="box-name">
-                                        <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=' . $domain . '" decoding="async" loading="lazy" />
-                                    ' . $domain . '
-                                    </a>
-                                    <a data-url="' . $data["ref"] . '" onclick="scf.results.image.external_func(this,scf);" class="btn">Open Website</a> ';
-
-                        if ($data_set["compare"]) {
-                            $html_div .= '<a class="run-search compare-action" onclick="scf.results.image.compare_func(this,scf);" data-size="' . round($data["size"] / 1024, 2) . '" data-url="' . SCF::imgcdn_url($data["source"]) . '" data-ref="' . $data["ref"] . '" data-source="' . $data["source"] . '" data-dimensions="' . "{$data["width"]}x{$data["height"]}" . '">Compare Original</a>';
-                        }
-
-                              $html_div .= '</div></div>';
-
-                              array_push($images_data, ["id" => str_replace(" ", "_", $data_set["caption"]) , "data" => $html_div , "count" => $data_set["count"] ,"domain" => $domain ,"source" => $data["source"] ,"sort_order" => $data["srot_order"]]);
-                    }
-                }
-            }
-
-
-            foreach ($data_sets_fg as $icon => $data_set) {
-                if ($data_set["count"]) {
-                    foreach ($data_set["data"] as $index => $data) {
-                        $html_div_fg = "";
-                        $uri = parse_url($data["ref"]);
-                        $domain = preg_replace("/^((?:[^\.]+\.){2}[^\.]+)\$/m", "\\1", $uri["host"]);
-
-
-                        $html_div_fg = '<div class="col-xs-6 col-md-3 fg_' . str_replace(" ", "_", $data_set["caption"]) . ' img-box-list" style="display:block" data-domain="' . $domain . '">
-                                <div class="box-col">
-                                    <div class="ris-img-blur">
-                                        <span class="si-eye-close"></span>
-                                        <p>Preview Unavailable</p>
-                                        <a data-url="' . $data["ref"] . '" onclick="scf.results.image.external_func(this,scf);" class="btn">Visit Website</a>
-                                    </div>
-                                    <div class="img-thumbnail" data-url="' .  $data["source"] . '"  onclick="scf.results.image.external_func(this,scf);"> 
-                                       <img src="' . $current_template_assets_url . '/images/loader-white.svg" data-src="' . SCF::imgcdn_url($data["source"]) . '" class="lazy-loader scf_ris_loader" alt="User" decoding="async" loading="lazy"/>
-                                  </div> 
-                                  <a href="' . $data["ref"] . '" target="_blank" data-url="' . $data["ref"] . '" onclick="scf.results.image.external_func(this,scf);" class="box-name">
-                                        <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=' . $domain . '" decoding="async" loading="lazy"/>
-                                       ' . $domain . '
-                                    </a>
-                                    <a data-url="' . $data["ref"] . '" onclick="scf.results.image.external_func(this,scf);" class="btn">Open Website</a> ';
-
-                        if ($data_set["compare"]) {
-                            $html_div_fg .= '<a class="run-search compare-action" onclick="scf.results.image.compare_func(this,scf);" data-size="' . round($data["size"] / 1024, 2) . '" data-url="' . SCF::imgcdn_url($data["source"]) . '" data-ref="' . $data["ref"] . '" data-source="' . $data["source"] . '" data-dimensions="' . "{$data["width"]}x{$data["height"]}" . '">Compare Original</a>';
-                        }
-
-                           $html_div_fg .= '</div>
-                           </div>';
-
-                        array_push($images_data_fg, ["id" => "fg_" . str_replace(" ", "_", $data_set["caption"]) , "data" => $html_div_fg, "count" => $data_set["count"],"domain" => $domain, "source" => $data["source"],"sort_order" => $data["srot_order"]]);
-                    }
-                }
-            }
-
-                    array_multisort(array_column($images_data, 'sort_order'), SORT_ASC, $images_data);
-                    array_multisort(array_column($images_data_fg, 'sort_order'), SORT_ASC, $images_data_fg);
-
-                    global $dbi;
-
-            if ($sort_by_website == "true") {
-                array_multisort(array_column($images_data, 'id'), SORT_ASC, $images_data, array_column($images_data, 'domain'), SORT_ASC, $images_data);
-
-                $urls = [];
-                $other_urls = [];
-                $images_data_sorted = [];
-                $urls_exceed_5 = [];
-                $urls_not_exceed_5 = [];
-
-                $sql = "CREATE TEMPORARY TABLE IF NOT EXISTS `temptable` (`id` int NOT NULL,`type` text NOT NULL,`data` text NOT NULL,`count` text NOT NULL,`domain` text NOT NULL)";
-                $dbi->query($sql);
-
-
-                foreach ($images_data as $data) {
-                    $dbi->insert("temptable", [ "id" => $id,"type" => $data["id"], "data" => $data["data"], "count" => $data["count"] ,"domain" => $data["domain"]]);
-                }
-
-
-                $html_div = ' <div class="col-xs-12 col-md-12 category-title">
-                                             <div class="cat-fb">
-                                                 <p class="sm-type">
-                                                 <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=" /> Other URL</p>
-                                                 <br/>
-                                                 <br/>
-                                             </div>
-                                     </div>';
-                array_push($other_urls, ["id" => $data["id"] , "data" => $html_div, "count" => $data["count"],"domain" => $data["domain"]]);
-
-
-
-                $sql = sprintf("select * , count(domain) as domain_count from temptable where id = %s group by domain ,type", $id);
-                $results = $dbi->query_to_multi_array($sql);
-
-                foreach ($results as $result) {
-                    if ($result["domain_count"] >= 5) {
-                        array_push($urls_exceed_5, [ "id" => $result["type"], "data" => $result["data"], "count" => $result["count"] , "domain" => $result["domain"]]);
-                    } else {
-                        array_push($urls_not_exceed_5, [ "id" => $result["type"], "data" => $result["data"], "count" => $result["count"] , "domain" => $result["domain"]]);
-                    }
-                }
-
-
-                foreach ($urls_exceed_5 as $url_exceed_5) {
-                    $html_div = ' <div class="col-xs-12 col-md-12 category-title">
-                        <div class="cat-fb">
-                            <p class="sm-type">
-                            <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=' . $url_exceed_5["domain"] . '" /> ' . $url_exceed_5["domain"] . '</p>
-                            <br/>
-                            <br/>
-                        </div>
-                        </div>';
-
-                    array_push($images_data_sorted, ["id" => $url_exceed_5["id"] , "data" => $html_div, "count" => $url_exceed_5["count"],"domain" => $url_exceed_5["domain"]]);
-
-
-                    $sql = sprintf("select * from temptable where domain = '%s' and type = '%s' and id = %s", $url_exceed_5["domain"], $url_exceed_5["id"], $id);
-                    $results = $dbi->query_to_multi_array($sql);
-
-                    $count = 0;
-                    foreach ($results as $data) {
-                        if ($count < 3) {
-                            array_push($images_data_sorted, [ "id" => $data["type"], "data" => $data["data"], "count" => $data["count"] ,"domain" => $data["domain"]]);
-                        } else {
-                            $html_div = str_replace("display:block", "display:none", $data["data"]);
-                            array_push($images_data_sorted, [ "id" => $data["type"], "data" => $html_div, "count" => $data["count"] , "domain" => $data["domain"]]);
-                        }
-                        $count++;
-                    }
-                    $html_div = '<div class="col-xs-6 col-md-3 img-box-list folded-item">
-                             <div class="box-col">
-                                     <div class="img-thumbnail">
-                                         <div class="ris-img-overlay">
-                                             <p>+' . ($count - 3) . '</p>
-                                         </div>
-                                         <img src="' . $current_template_assets_url . '/images/report.png"  class="scf_ris_loader" alt="User" decoding="async" loading="lazy" style="background-image: url(' . SCF::imgcdn_url($url_exceed_5["source"]) . '" />
-                                     </div>
-                                     <p>These multiple results came from same website.</p>
-                                     <a class="view-all-btn" data-domain="' . $url_exceed_5["domain"] . '" onclick="scf.results.image.view_all(this,scf);">View All</a>
-                                 </div>
-                             </div>';
-                     array_push($images_data_sorted, ["id" => $url_exceed_5["id"] , "data" => $html_div, "count" => $url_exceed_5["count"],"domain" => $url_exceed_5["domain"]]);
-                }
-
-                foreach ($urls_not_exceed_5 as $url_not_exceed_5) {
-                    $sql = sprintf("select * from temptable where domain = '%s' and type = '%s' and id = %s", $url_not_exceed_5["domain"], $url_not_exceed_5["id"], $id);
-                    $results = $dbi->query_to_multi_array($sql);
-                    foreach ($results as $data) {
-                        array_push($other_urls, [ "id" => $data["type"], "data" => $data["data"], "count" => $data["count"] ,"domain" => $data["domain"]]);
-                    }
-                }
-
-
-
-                $images_data_sorted = array_merge($images_data_sorted, $other_urls);
-
-                /********************Facial Recog********************/
-                $sql = sprintf("delete from temptable");
-                $dbi->query($sql);
-                array_multisort(array_column($images_data_fg, 'id'), SORT_ASC, $images_data_fg, array_column($images_data_fg, 'domain'), SORT_ASC, $images_data_fg);
-
-                $other_urls_fg = [];
-                $images_data_sorted_fg = [];
-                $urls_exceed_5_fg = [];
-                $urls_not_exceed_5_fg = [];
-
-                foreach ($images_data_fg as $data) {
-                    $dbi->insert("temptable", [ "id" => $id,"type" => $data["id"], "data" => $data["data"], "count" => $data["count"] , "domain" => $data["domain"]]);
-                }
-
-
-                $html_div = ' <div class="col-xs-12 col-md-12 category-title">
-                                             <div class="cat-fb">
-                                                 <p class="sm-type">
-                                                 <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=" /> Other URL</p>
-                                                 <br/>
-                                                 <br/>
-                                             </div>
-                                     </div>';
-                array_push($other_urls_fg, ["id" => $data["id"] , "data" => $html_div, "count" => $data["count"],"domain" => $data["domain"]]);
-
-
-
-                $sql = sprintf("select * , count(domain) as domain_count from temptable where id = %s group by domain ,type", $id);
-                $results = $dbi->query_to_multi_array($sql);
-
-                foreach ($results as $result) {
-                    if ($result["domain_count"] >= 5) {
-                        array_push($urls_exceed_5_fg, [ "id" => $result["type"], "data" => $result["data"], "count" => $result["count"] , "prv" => $result["prv"],"domain" => $result["domain"]]);
-                    } else {
-                        array_push($urls_not_exceed_5_fg, [ "id" => $result["type"], "data" => $result["data"], "count" => $result["count"] , "prv" => $result["prv"],"domain" => $result["domain"]]);
-                    }
-                }
-
-
-                foreach ($urls_exceed_5_fg as $url_exceed_5) {
-                    $html_div = ' <div class="col-xs-12 col-md-12 category-title">
-                        <div class="cat-fb">
-                            <p class="sm-type">
-                            <img src="' . $current_template_assets_url . '/images/loader-white.svg" class="lazy-loader favicon" data-src="https://www.google.com/s2/favicons?domain=' . $url_exceed_5["domain"] . '" /> ' . $url_exceed_5["domain"] . '</p>
-                            <br/>
-                            <br/>
-                        </div>
-                        </div>';
-
-                    array_push($images_data_sorted_fg, ["id" => $url_exceed_5["id"] , "data" => $html_div, "count" => $url_exceed_5["count"],"domain" => $url_exceed_5["domain"]]);
-
-
-                    $sql = sprintf("select * from temptable where domain = '%s' and type = '%s' and id = %s", $url_exceed_5["domain"], $url_exceed_5["id"], $id);
-                    $results = $dbi->query_to_multi_array($sql);
-
-                    $count = 0;
-                    foreach ($results as $data) {
-                        if ($count < 3) {
-                            array_push($images_data_sorted_fg, [ "id" => $data["type"], "data" => $data["data"], "count" => $data["count"], "domain" => $data["domain"]]);
-                        } else {
-                            $html_div = str_replace("display:block", "display:none", $data["data"]);
-                            array_push($images_data_sorted_fg, [ "id" => $data["type"], "data" => $html_div, "count" => $data["count"] , "domain" => $data["domain"]]);
-                        }
-                        $count++;
-                    }
-                    $html_div = '<div class="col-xs-6 col-md-3 img-box-list folded-item">
-                             <div class="box-col">
-                                     <div class="img-thumbnail">
-                                         <div class="ris-img-overlay">
-                                             <p>+' . ($count - 3) . '</p>
-                                         </div>
-                                         <img src="' . $current_template_assets_url . '/images/report.png"  class="scf_ris_loader" alt="User" decoding="async" loading="lazy" style="background-image: url(' . SCF::imgcdn_url($url_exceed_5["source"]) . '" />
-                                     </div>
-                                     <p>These multiple results came from same website.</p>
-                                     <a class="view-all-btn" data-domain="' . $url_exceed_5["domain"] . '" onclick="scf.results.image.view_all(this,scf);">View All</a>
-                                 </div>
-                             </div>';
-                     array_push($images_data_sorted_fg, ["id" => $url_exceed_5["id"] , "data" => $html_div, "count" => $url_exceed_5["count"],"domain" => $url_exceed_5["domain"]]);
-                }
-                foreach ($urls_not_exceed_5_fg as $url_not_exceed_5) {
-                    $sql = sprintf("select * from temptable where domain = '%s' and type = '%s' and id = %s", $url_not_exceed_5["domain"], $url_not_exceed_5["id"], $id);
-                    $results = $dbi->query_to_multi_array($sql);
-                    foreach ($results as $data) {
-                        array_push($other_urls_fg, [ "id" => $data["type"], "data" => $data["data"], "count" => $data["count"] ,"domain" => $data["domain"]]);
-                    }
-                }
-
-
-                        $images_data_sorted_fg = array_merge($images_data_sorted_fg, $other_urls_fg);
-
-                        $sql = sprintf("DROP TABLE IF EXISTS temptable");
-                        $dbi->query($sql);
-
-                        $ajax_status["images_data"] = $images_data_sorted;
-                        $ajax_status["images_data_fg"] = $images_data_sorted_fg;
-            } else {
-                    $ajax_status["images_data"] = $images_data;
-                    $ajax_status["images_data_fg"] = $images_data_fg;
-            }
-            break;
-        case "API_Tracking_Berify":
-            $from_date = $input_post["from_date"];
-            $to_date = $input_post["to_date"];
-            $time_split = $input_post["time_split"];
-            $engine = $input_post["engine"];
-            // $test = $input_post["test"];
-
-            try {
-                $url = sprintf('https://api.berify.com/api/baseline-api/?token=tNm2mXbZa52y3Y&from_date=%s&to_date=%s&time_split=%s&engine=%s&test=0', $from_date, $to_date, $time_split, $engine);
-                $client = new \vbrowser();
-                $stream = $client->request($url);
-                //$data = json_decode( $stream["response"], true );
-                $ajax_status["data"] = $stream["response"];
-            } catch (Exception $ex) {
-                $ajax_status["data"] = $ex;
-            }
-
-            break;
-
-        case "api_key_indicator_monthly":
-            try {
-                $type = $input_post["type"];
-
-                $start_date_current = date("Y-m-d", strtotime("-1 months"));
-                $start_date_current = date('Y-m-d', (strtotime('-1 day', strtotime($start_date_current)) ));
-                $end_date_current =  date("Y-m-d");
-
-                $start_date_previous = date("Y-m-d", (strtotime("-1 months", strtotime($start_date_current))));
-                $end_date_previous =  date('Y-m-d', (strtotime('-1 months', strtotime($end_date_current)) ));
-
-                $curl = curl_init();
-
-                curl_setopt($curl, CURLOPT_URL, "https://api.berify.com/api/baseline-api/?token=tNm2mXbZa52y3Y&from_date={$start_date_current}&to_date={$end_date_current}&time_split=d&engine=a&test=0");
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-                $output_previous = curl_exec($curl);
-
-
-                curl_setopt($curl, CURLOPT_URL, "https://api.berify.com/api/baseline-api/?token=tNm2mXbZa52y3Y&from_date={$start_date_previous}&to_date={$end_date_previous}&time_split=d&engine=a&test=0");
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-                $output_current = curl_exec($curl);
-
-                curl_close($curl);
-
-                $output_previous = json_decode($output_previous, true);
-                $output_current = json_decode($output_current, true);
-
-
-                $return_output_previous = [];
-                $return_output_current = [];
-                $return_labels = [];
-
-                $c = 0;
-                foreach ($output_previous["response"] as $daten) {
-                    if (!empty($daten)) {
-                        array_push($return_output_previous, $daten[$type]);
-                        array_push($return_labels, $c++);
-                    }
-                }
-
-                foreach ($output_current["response"] as $daten) {
-                    if (!empty($daten)) {
-                        array_push($return_output_current, $daten[$type]);
-                    }
-                }
-
-
-                $ajax_status["output_previous"] = $return_output_previous;
-                $ajax_status["output_current"] = $return_output_current;
-                $ajax_status["labels"] = array_reverse($return_labels);
-            } catch (Exception $ex) {
-                $ajax_status["data"] = $ex;
-            }
-
-            break;
-
-        case "api_key_indicator_daily":
-            try {
-                $type = $input_post["type"];
-                $day = $input_post["day"];
-
-                $start_date_current =  date("Y-m-d", strtotime("-" . ($day + 1) . " day"));
-                $end_date_current =  date("Y-m-d", strtotime("-" . $day . " day"));
-
-                $start_date_previous = date("Y-m-d", (strtotime("-1 months", strtotime($start_date_current))));
-                $end_date_previous =  date('Y-m-d', (strtotime('-1 months', strtotime($end_date_current)) ));
-
-                $curl = curl_init();
-
-                curl_setopt($curl, CURLOPT_URL, "https://api.berify.com/api/baseline-api/?token=tNm2mXbZa52y3Y&from_date={$start_date_current}&to_date={$end_date_current}&time_split=h&engine=a&test=0");
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-                $output_previous = curl_exec($curl);
-
-
-                curl_setopt($curl, CURLOPT_URL, "https://api.berify.com/api/baseline-api/?token=tNm2mXbZa52y3Y&from_date={$start_date_previous}&to_date={$end_date_previous}&time_split=h&engine=a&test=0");
-                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-                $output_current = curl_exec($curl);
-
-                curl_close($curl);
-
-                $output_previous = json_decode($output_previous, true);
-                $output_current = json_decode($output_current, true);
-
-
-                $return_output_previous = [];
-                $return_output_current = [];
-                $return_labels = [];
-
-                $c = 0;
-                foreach ($output_previous["response"] as $daten) {
-                    if (!empty($daten)) {
-                        array_push($return_output_previous, $daten[$type]);
-                        array_push($return_labels, $c++);
-                    }
-                }
-
-                foreach ($output_current["response"] as $daten) {
-                    if (!empty($daten)) {
-                        array_push($return_output_current, $daten[$type]);
-                    }
-                }
-
-
-                $ajax_status["output_previous"] = $return_output_previous;
-                $ajax_status["output_current"] = $return_output_current;
-                $ajax_status["labels"] = array_reverse($return_labels);
-            } catch (Exception $ex) {
-                $ajax_status["data"] = $ex;
-            }
-
-            break;
-
-        case "set_regular_premium_combine":
-            $_SESSION["regular_premium_combine"] = 1;
-            $_SESSION["active_boosted_ontime"] = 1;
-            $ajax_status["status"] = true;
-
-            // CSI-5822
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["7"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step6_yes_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["7"] = true;
-            }
-            break;
-
-        case "unset_regular_premium_combine":
-            if (isset($_SESSION["regular_premium_combine"])) {
-                unset($_SESSION["regular_premium_combine"]);
-            }
-            $ajax_status["status"] = true;
-
-            // CSI-5822
-            if (isset($_SESSION["step_two_idi"]) && !isset($_SESSION["step_three_idi"]["7"]) && isset($_SESSION["ab_premium_idi_SO"])) {
-                $_SESSION["ab_premium_idi_SO"]->track_event("3_a_step6_no_idi_SO", SYSTEM::get_device_type());
-                $_SESSION["step_three_idi"]["7"] = true;
-            }
-            break;
-
-        case "set_regular_premium_combine_plan":
-            $_SESSION["active_boosted_ontime"] = 1;
-            $ajax_status["status"] = true;
-            break;
-
-        case "unset_regular_premium_combine_plan":
-            if (isset($_SESSION["active_boosted_ontime"])) {
-                unset($_SESSION["active_boosted_ontime"]);
-            }
-            $ajax_status["status"] = true;
-            break;
-
-        case "update_gmaps_api_count":
-            global $dbi;
-            $sql = sprintf("INSERT INTO %s (`cache_id`,`cache_person_id`,`engine_id`,`results`,`flags`,`stage`) VALUES (NULL,NULL,%s,1,NULL,0)", DB_TBL_DATA_SOURCE_LOG, SEARCH_ENGINE_GOOGLE_PLACES_API);
-            $dbi->query($sql);
-
-            $ajax_status["is_done"] = true;
-            break;
-        case "search_specialist_phone":
-            $_SESSION["specialist_number"] = $input_post["number"];
-            $ajax_status["status"] = true;
-            break;
-        case "remove_pl_report":
-            $id = $input_post["id"];
-            $user_id = $input_post["user_id"];
-            Search::update_privacy_lock_tracking($user_id, false, $id, date("Y-m-d"), "", false);
-            break;
-        case "monitor_pl_report":
-            $id = $input_post["id"];
-            $user_id = $input_post["user_id"];
-            $val = $input_post["val"];
-            if ($val == 1) {
-                $tracking = true;
-            } else {
-                $tracking = false;
-            }
-                    Search::update_privacy_lock_tracking($user_id, $tracking, $id, date("Y-m-d"), "", true);
-            break;
-        case "delete_pl_email":
-            $id = $input_post["id"];
-            User::delete_privacy_lock_emails($id);
-            break;
-        case "add_report":
-            $id = $input_post["id"];
-            $date = date('Y-m-d');
-            Search::update_privacy_lock_tracking($user_id, true, $id, $date, "", true);
-            $ajax_status["status"] = true;
-        case "privacy_lock_rating":
-            $get_meta = user::get_meta($user_id, "privacy_lock_feedback");
-            if (! empty($get_meta)) {
-                $get_meta = unserialize($get_meta);
-
-                $db_star = $get_meta["rating"];
-                $db_q1 = $get_meta["q1"];
-                $db_q2 = $get_meta["q2"];
-                $db_q3 = $get_meta["q3"];
-                $db_q4 = $get_meta["q4"];
-                $db_q5 = $get_meta["q5"];
-                $db_reports = $get_meta["reports"];
-                $db_emails = $get_meta["emails"];
-                $db_plans = $get_meta["plans"];
-            }
-
-            $star = ( ! empty($input_post->star) ) ? $input_post->star : ( ! empty($db_star) ? $db_star : "" );
-            $q1 = ( ! empty($input_post->q1) ) ? $input_post->q1 : ( ! empty($db_q1) ? $db_q1 : "" );
-            $q2 = ( ! empty($input_post->q2) ) ? $input_post->q2 : ( ! empty($db_q2) ? $db_q2 : "" );
-            $q3 = ( ! empty($input_post->q3) ) ? $input_post->q3 : ( ! empty($db_q3) ? $db_q3 : "" );
-            $q4 = ( ! empty($input_post->q4) ) ? $input_post->q4 : ( ! empty($db_q4) ? $db_q4 : "" );
-            $q5 = ( ! empty($input_post->q5) ) ? $input_post->q5 : ( ! empty($db_q5) ? $db_q5 : "" );
-            $reports = ( ! empty($input_post->reports) ) ? $input_post->reports : ( ! empty($db_reports) ? $db_reports : "0" );
-            $emails = ( ! empty($input_post->emails) ) ? $input_post->emails : ( ! empty($db_emails) ? $db_emails : "0" );
-            $plans = ( ! empty($input_post->plans) ) ? $input_post->plans : ( ! empty($db_plans) ? $db_plans : "" );
-
-            /*$reports = ( ! empty ( $input_post["reports"] ) ? $input_post["reports"] : "0");
-            $emails = ( ! empty ( $input_post["emails"] ) ? $input_post["emails"] : "0");
-            $plans = ( ! empty ( $input_post["plans"] ) ? $input_post["plans"] : "");*/
-
-            if (strtotime($user_data["created"]) < strtotime("2022-10-15")) {
-                $new_user = 0;
-            } else {
-                $new_user = 1;
-                $q4 = "";
-                $q5 = "";
-            }
-
-            $value = [
-            "new_user" => $new_user,
-            "rating" => $star,
-            "q1" => $q1,
-            "q2" => $q2,
-            "q3" => $q3,
-            "q4" => $q4,
-            "q5" => $q5,
-            "emails" => $emails,
-            "reports" => $reports,
-            "plans" => $plans
-            ];
-
-            $serialize_value = serialize($value);
-            User::set_meta($user_id, "privacy_lock_feedback", $serialize_value);
-            $ajax_status["status"] = true;
-            break;
-        case "add_deep_search":
-            $_SESSION["add_deep_search"][ $input_post["type"] ] = $input_post["id"];
-            $_SESSION['no_result_funnel_step'] = $_SESSION['no_result_funnel_step'] + 1;
-            $data["id"] = $_SESSION['no_result_funnel_id'];
-            $data["option"] = 1;
-            Search::no_results_tracking($_SESSION['no_result_funnel_step'], $data);
-            $ajax_status["status"] = true;
-            break;
-        case "run_deep_search":
-            if (isset($_SESSION["add_deep_search"])) {
-                $deep_search_count = [];
-                $dp_index = 0;
-                unset($_SESSION["no_results_history"]);
-
-                foreach ($_SESSION["add_deep_search"] as $index => $row) {
-                    if ($index == SEARCH_TYPE_NAME) {
-                        $params = [
-                        "full_name" => $row, /* david smith */
-                        "type" => SEARCH_TYPE_NAME,
-                        ];
-                    } elseif ($index == SEARCH_TYPE_PHONE) {
-                        $params = [
-                        "phone" => $row, /* 8044534130 */
-                        "type" => SEARCH_TYPE_PHONE
-                        ];
-                    } elseif ($index == SEARCH_TYPE_USERNAME) {
-                        $params = [
-                        "username" => $row, /* dave.mcclellan.92 */
-                        "type" => SEARCH_TYPE_USERNAME
-                        ];
-                    } elseif ($index == SEARCH_TYPE_EMAIL) {
-                        $params = [
-                        "email" => $row, /* david.mcclellan@langley.af.mil */
-                        "type" => SEARCH_TYPE_EMAIL
-                        ];
-                    } else {
-                        $params = [];
-                    }
-
-                    $deep_results = \WebAPI\Search::run($params);
-                    $deep_search_count[$dp_index]["cache_id"] = $deep_results["cache_id"];
-                    $deep_search_count[$dp_index]["count"] = $deep_results["result_count"];
-                    $deep_search_count[$dp_index]["query"] = $row;
-                    $_SESSION["no_results_history"][$dp_index] = $deep_results["cache_id"];
-                    $dp_index++;
-                }
-
-                array_multisort(array_column($deep_search_count, 'count'), SORT_DESC, $deep_search_count);
-
-                if (! empty($deep_search_count[0]["query"]) && ! empty($deep_search_count[0]["cache_id"])) {
-                    $redirect_page = BASE_URL . "search/" . SYSTEM::sanitize($deep_search_count[0]["query"]) . "-{$deep_search_count[0]["cache_id"]}/?search=new";
-                } else {
-                    $redirect_page = "";
-                    if ($user_id) {
-                        foreach ($_SESSION["add_deep_search"] as $index => $row) {
-                            $insert_data = array(
-                            "email" => $user_data["email"],
-                            "query" => $row,
-                            "params" => $_SESSION["last_search_params"],
-                            "type" => $index,
-                            "status" => 0
-                            );
-                            Search::add_no_results_search($insert_data);
-                        }
-                    }
-                }
-
-                $_SESSION["add_deep_search_email"] = $_SESSION["add_deep_search"];
-                unset($_SESSION["add_deep_search"]);
-            } else {
-                $redirect_page = "";
-            }
-
-            if (! empty($redirect_page)) {
-                $data["id"] = $_SESSION['no_result_funnel_id'];
-                $data["option"] = 1;
-                Search::no_results_tracking(5, $data);
-            }
-            $ajax_status["url"] = $redirect_page;
-            $ajax_status["status"] = true;
-            break;
-
-        case "ris_intermediate_update":
-            $id = $input_post["id"];
-            $reuslt = User::search_history_ris_id($id, $user_id, SEARCH_TYPE_IMAGE, 0, 5);
-            $ajax_status["status"] = true;
-            $ajax_status["report_id"] = $reuslt["id"];
-            $ajax_status["similar"] = $reuslt["similar"];
-            $ajax_status["exact"] = $reuslt["exact"];
-            $ajax_status["loading"] = $reuslt["loading"];
-            break;
-
-
-        case "deactivate_my_account":
-            ##Permanantly delete user account by user from mobile app
-            if (! empty($mobile_app)) {
-                User::update_activa_status("deactivate", $user_id);
-                session_destroy();
-                session_name(SESSION_NAME);
-                session_start();
-                $ajax_status["status"] = true;
-            } else {
-                $ajax_status["status"] = false;
-            }
-            ##Permanantly delete user account by user from mobile app
-            break;
-
-        case "snap_cache_check":
-            $ajax_status["status"] = false;
-
-            if ($input_post->url) {
-                $client = new vbrowser();
-                $client->headers_only(true);
-                $stream = $client->request("https://webcache.googleusercontent.com/search?q=cache:" . urlencode($input_post->url));
-
-                $ajax_status["status"] = ( $stream["status_code"] == 200 );
-            }
-
-            break;
-        case "bing_api":
-            $url = $input_post["url"];
-            $result = BingAPI::search_file(UPLOADS_PATH . $url);
-            $ajax_status["data"] = $result;
-            $ajax_status["status"] = true;
-            break;
-
-        case "skip_deep_search":
-            $_SESSION['no_result_funnel_step'] = $_SESSION['no_result_funnel_step'] + 1;
-            $data["id"] = $_SESSION['no_result_funnel_id'];
-            $data["option"] = 2;
-            Search::no_results_tracking($_SESSION['no_result_funnel_step'], $data);
-            $ajax_status["status"] = true;
-            break;
-
-        case "chatbot_submit":
-            $_SESSION["chatbot_data"] = $_SESSION["chatbot_data"] ?? [];
-            $chatbot_data =& $_SESSION["chatbot_data"];
-
-            $chatbot = new \DataSource\ChatBot();
-            if ("welcome" == $input_post->data) {
-                $message = $chatbot->getMessage(empty($chatbot_data) ? \DataSource\ChatBot::DATA_SET_WELCOME : \DataSource\ChatBot::DATA_SET_WELCOME_BACK);
-                $_SESSION["chatbot_data"] = [ "known_information" => [] ];
-            } else {
-                if (! empty($chatbot_data["abuse_system"])) {
-                    break;
-                }
-                $chatbot_data["abuse_system"] = true;
-                $message = $chatbot->parseMessage($input_post->data, $chatbot_data["known_information"]);
-
-                if (empty($message["person_search"])) {
-                    $message = $chatbot->getMessage(\DataSource\ChatBot::DATA_SET_PEOPLE_INFO_ONLY);
-                } else {
-                    $chatbot_data["known_information"] = array_merge($chatbot_data["known_information"] ?? [], array_filter($message));
-                    $searchable = ( $message["not_known"] && ! empty($message["first_name"]) && ! empty($message["last_name"]) );
-                    $do_search = false;
-
-                    if ($searchable) {
-                        if (! empty($message["reply"]) && empty($message["state"]) && empty($chatbot_data["asked_state"])) {
-                            $chatbot_data["asked_state"] = true;
-                            $searchable = false;
-                        } else {
-                            $do_search = true;
-                        }
-                    }
-
-                    if ($do_search) {
-                        $search_params["type"] = SEARCH_TYPE_NAME;
-                        $search_params = array_merge($search_params, array_intersect_key($message, $search_params));
-                        $search_data = Search::parse_search_parameters($search_params);
-                        $search = Search::do_search($search_data);
-
-                        if (count($search["results"])) {
-                            $message = str_replace([ "{name}", "{count}" ], [ $search_data["query"], count($search["results"]) ], $chatbot->getMessage(\DataSource\ChatBot::DATA_SET_FOUND_RESULTS));
-                            $redirect_page = BASE_URL . "search/" . SYSTEM::sanitize($search_data["query"]) . "-{$search["cache_id"]}/";
-                            $message .= "<br /><br /><a href=\"{$redirect_page}\">View Results</a><br />";
-                        } else {
-                            $message = str_replace("{name}", $search_data["query"], $chatbot->getMessage(\DataSource\ChatBot::DATA_SET_NO_RESULTS));
-                        }
-
-                        $message .= "<br />" . $chatbot->getMessage(\DataSource\ChatBot::DATA_SET_THANK_YOU);
-                        $chatbot_data["known_information"] = [];
-                    } else {
-                        $message = $message["reply"] ?? $chatbot->getMessage(\DataSource\ChatBot::DATA_SET_INSUFFICIENT_INFO);
-                    }
-                }
-            }
-
-            $chatbot_data["abuse_system"] = false;
-
-            $ajax_status = [
-            "status" => true,
-            "return" => $message
-            ];
-            break;
-
-        case "scam_chat_check":
-            $chat = new DataSource\ChatBot();
-            $romance_scam = $chat->scamMessageValidator($input_post->message);
-
-            if (!empty($romance_scam)) {
-                $ajax_status["status"] = true;
-                $ajax_status["romance_scam"] = $romance_scam;
-            }
-            break;
-        case "check_all_opt":
-            foreach ($_SESSION[$input_post["class"]] as $k => $val) {
-                $_SESSION[$input_post["class"]][$k] = $input_post["is_checked"];
-            }
-            $ajax_status["status"] = true;
-            break;
-        case "check_single_opt":
-            $_SESSION[$input_post["class"]][$input_post["id"]] = $input_post["is_checked"];
-            $ajax_status["status"] = true;
-            break;
-        default:
-            $ajax_status["status"] = false;
+class SCF
+{
+    public static function init_vars()
+    {
+
+        $init = [
+            "amp_page" => SYSTEM::request("amp"),
+            "module" => SYSTEM::request_get("module", "home"),
+            "user_id" => isset($_SESSION["user"]["id"]) ? $_SESSION["user"]["id"] : 0,
+        ];
+
+        $GLOBALS += $init;
     }
 
-    header("Content-Type: application/json");
-    echo json_encode($ajax_status);
-    die();
+    public static function get_settings()
+    {
+
+        global $dbi;
+
+        $settings = [];
+
+        $query = sprintf("SELECT * FROM %s", DB_TBL_SETTING);
+        $results = $dbi->query_to_multi_array($query);
+
+        foreach ($results as $result) {
+            $settings[$result["key"]] = $result["value"];
+        }
+
+        return $settings;
+    }
+
+    public static function update_setting($setting, $value)
+    {
+
+        global $dbi;
+
+        $data = ["key" => $setting, "value" => $value];
+
+        $dbi->insert_update(DB_TBL_SETTING, $data, $data);
+    }
+
+    public static function get_proxy_list()
+    {
+
+        global $dbi;
+
+        $query = sprintf("SELECT ip, port, username, password FROM %s", DB_TBL_PROXY);
+        return $dbi->query_to_multi_array($query);
+    }
+
+    public static function get_random_proxy()
+    {
+
+        global $proxy_list;
+
+        return $proxy_list[array_rand($proxy_list)];
+    }
+
+    public static function get_template_path($section = "", $template_module_name = "")
+    {
+
+        static $accepted_sections;
+
+        if (empty($accepted_sections)) {
+            $accepted_sections = array_fill_keys(["template", "common", "module"], 1);
+        }
+
+        if (!isset($accepted_sections[$section])) {
+            $section = "template";
+        }
+
+        if ("template" == $section) {
+            if (!$template_module_name) {
+                $template_module_name = $GLOBALS["user_template"];
+            }
+            $path = "main" . DIRECTORY_SEPARATOR . $template_module_name . DIRECTORY_SEPARATOR;
+        } elseif ("module" == $section) {
+            $path = $section . DIRECTORY_SEPARATOR . $template_module_name . DIRECTORY_SEPARATOR;
+        } else {
+            $path = $section . DIRECTORY_SEPARATOR;
+        }
+
+        return TEMPLATE_PATH . $path;
+    }
+
+    public static function get_asset_path($section = "", $template_module_name = "")
+    {
+
+        $path = self::get_asset_url($section, $template_module_name);
+        return str_replace(ASSETS_URL . "/", ASSETS_PATH, $path) . DIRECTORY_SEPARATOR;
+    }
+
+    public static function get_asset_url($section = "", $template_module_name = "")
+    {
+
+        static $accepted_sections;
+
+        if (empty($accepted_sections)) {
+            $accepted_sections = array_fill_keys(["template", "common", "module"], 1);
+        }
+
+        if (!isset($accepted_sections[$section])) {
+            $section = "template";
+        }
+
+        if ("template" == $section) {
+            if (!$template_module_name) {
+                $template_module_name = $GLOBALS["user_template"];
+            }
+            $path = $section . '/' . $template_module_name;
+        } elseif ("module" == $section) {
+            $path = $section . '/' . $template_module_name;
+        } else {
+            $path = $section;
+        }
+
+        return ASSETS_URL . '/' . $path;
+    }
+
+    public static function get_fail_safe_template_path($filename, $template_name, $fail_over_template = "default")
+    {
+
+        $path = self::get_template_path("template", $template_name);
+
+        return file_exists($path . $filename) ? $path . $filename : self::get_template_path("template", $fail_over_template) . $filename;
+    }
+
+    public static function switch_to_template($template)
+    {
+
+        global $user_template, $current_template_path, $current_template_assets_url;
+
+        $user_template = $template;
+        $current_template_path = SCF::get_template_path();
+        $current_template_assets_url = SCF::get_asset_url();
+
+        Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "switch to template::" . $template, ["messages", "switch to template", $template]);
+    }
+
+    public static function switch_to_default_template()
+    {
+
+        self::switch_to_template("default");
+    }
+
+    /**
+     * Get a Mail Object
+     *
+     * @return PHPMailer
+     */
+    public static function get_mailer()
+    {
+
+        $mailer = new PHPMailer(false);
+        $mailer->isSMTP();
+        $mailer->SMTPAuth = true;
+        $mailer->Timeout = 30;
+        //$mailer->SMTPSecure = false;
+        //$mailer->SMTPAutoTLS = false;
+        $mailer->SMTPSecure = "tls";
+        $mailer->Host = MAIL_HOST;
+        $mailer->Port = MAIL_PORT;
+        $mailer->Username = MAIL_USERNAME;
+        $mailer->Password = MAIL_PASSWORD;
+        $mailer->setFrom(MAIL_FROM_ADDRESS, "SocialCatfish");
+
+        return $mailer;
+    }
+
+    public static function get_mail_template($template, $data, $strip_tags = true)
+    {
+
+        $behavior_data = $data;
+        $behavior_data["title"] = !empty($behavior_data["title"]) ? $behavior_data["title"] : ucwords(str_replace(["-", "_"], " ", $template));
+        Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "{$template}::" . http_build_query($behavior_data, '', ', '), ["messages", "setting up email template to send", $template]);
+
+        $template_file = EMAIL_TEMPLATES_PATH . $template . ".html";
+        $main_email_template = EMAIL_TEMPLATES_PATH . "template-standard.html";
+
+        $data["home_link"] = BASE_URL;
+        $data["logo"] = BASE_URL . TEMPLATE_DIR . "/images/email-logo.png";
+
+        $email_title = !empty($data["title"]) ? $data["title"] : ucwords(str_replace(["-", "_"], " ", $template));
+
+        $content = "";
+        if (file_exists($template_file)) {
+            $content = file_get_contents($template_file);
+            foreach ($data as $key => $value) {
+                $value = $strip_tags ? nl2br(strip_tags($value)) : nl2br($value);
+                $content = str_replace("{{$key}}", $value, $content);
+                unset($data[$key]);
+            }
+        }
+
+        $data["main_content"] = $content;
+        $content = file_get_contents($main_email_template);
+        $data["title"] = $email_title;
+
+
+        if (substr($template, 0, 18) === "override_template_") {
+            $content = $data["main_content"];
+        } else {
+            foreach ($data as $key => $value) {
+                if ("main_content" != $key) {
+                    $value = nl2br(strip_tags($value));
+                }
+
+                $content = preg_replace("/\{" . preg_quote($key, "/") . "\}/", addcslashes($value, '\\$'), $content);
+            }
+
+            $content = preg_replace("/\{" . preg_quote($key, "/") . "\}/", addcslashes($value, '\\$'), $content);
+        }
+
+
+        return [
+            "text" => preg_replace("/\<[br \/]+\>/i", "\r\n", strip_tags($content, "br")),
+            "html" => $content,
+        ];
+    }
+
+    public static function get_latest_blog_posts($posts = 7)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT p.post_title, p.post_date, u.display_name, p.post_name, p.post_content, a.guid FROM %s p INNER JOIN %s u ON p.post_author = u.ID INNER JOIN %s m ON p.ID = m.post_id INNER JOIN %s a ON m.meta_value = a.ID WHERE p.post_type = 'post' AND p.post_status = 'publish' AND m.meta_key = '_thumbnail_id' ORDER BY p.post_date DESC LIMIT 0, %d", DB_TBL_WP_POSTS, DB_TBL_WP_USERS, DB_TBL_WP_POSTMETA, DB_TBL_WP_POSTS, $posts);
+        $results = $dbi->query_to_multi_array($sql);
+
+        foreach ($results as $index => $post) {
+            $post["post_content"] = explode("<!--more-->", $post["post_content"]);
+            $post["post_content"] = preg_replace("/\[.*?\]/", "", strip_tags(array_shift($post["post_content"])));
+            if (strlen($post["post_content"]) > 150) {
+                $post["post_content"] = substr($post["post_content"], 0, 150) . " ...";
+            }
+            $results[$index]["post_content"] = $post["post_content"];
+            $results[$index]["comment_count"] = 0;
+        }
+        return $results;
+    }
+
+    public static function get_all_blog_posts()
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT post_title, post_name FROM %s WHERE ( post_type = 'page' OR post_type = 'post' ) AND post_status = 'publish'", DB_TBL_WP_POSTS);
+        $data = $dbi->query_to_multi_array($sql);
+
+        return $data;
+    }
+
+    public static function get_blog_categories()
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT wt.* FROM %s p
+        INNER JOIN %s r ON r.object_id=p.ID
+        INNER JOIN %s t ON t.term_taxonomy_id = r.term_taxonomy_id
+        INNER JOIN %s wt on wt.term_id = t.term_id
+        WHERE   t.taxonomy='category' GROUP BY wt.slug", DB_TBL_WP_POSTS, DB_TBL_WP_TERM_RELATIONSHIPS, DB_TBL_WP_TERM_TAXONOMY, DB_TBL_WP_TERMS);
+        $data = $dbi->query_to_multi_array($sql);
+
+        return $data;
+    }
+
+    public static function get_blog_posts_by_view_count($start, $limit)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT p.*, t.guid FROM (SELECT p.ID, p.post_title, p.post_date, p.post_name, p.post_content, CAST(m.meta_value AS UNSIGNED) AS views FROM %s p INNER JOIN %s m ON p.ID = m.post_id WHERE p.post_status = 'publish' AND (p.post_type = 'post' OR p.post_type = 'page') AND m.meta_key = 'wpb_post_views_count') p INNER JOIN %s t ON p.ID = t.post_parent AND t.post_type = 'attachment' WHERE SUBSTR( t.guid, -3 ) = 'png' OR SUBSTR( t.guid, -3 ) = 'jpg'  OR SUBSTR( t.guid, -3 ) = 'jpeg' GROUP BY p.ID ORDER BY p.views DESC LIMIT $start, $limit", DB_TBL_WP_POSTS, DB_TBL_WP_POSTMETA, DB_TBL_WP_POSTS);
+        $results = $dbi->query_to_multi_array($sql);
+        foreach ($results as $index => $post) {
+            $post["post_content"] = explode("<!--more-->", $post["post_content"]);
+            $post["post_content"] = preg_replace("/\[.*?\]/", "", strip_tags(array_shift($post["post_content"])));
+            if (strlen($post["post_content"]) > 150) {
+                $post["post_content"] = substr($post["post_content"], 0, 150) . " ...";
+            }
+            $results[$index]["post_content"] = $post["post_content"];
+            $results[$index]["comment_count"] = 0;
+        }
+
+        return $results;
+    }
+
+    public static function get_blog_posts_by_category($category)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT p.post_title, p.post_date, u.display_name, p.post_name, p.post_content, a.guid FROM %s p LEFT JOIN %s rel ON rel.object_id = p.ID LEFT JOIN %s tax ON tax.term_taxonomy_id = rel.term_taxonomy_id LEFT JOIN %s t ON t.term_id = tax.term_id LEFT JOIN %s u ON p.post_author = u.ID INNER JOIN %s m ON p.ID = m.post_id INNER JOIN %s a ON m.meta_value = a.ID WHERE t.name LIKE 'Important' AND p.post_type = 'post' AND p.post_status = 'publish' AND m.meta_key = '_thumbnail_id'", DB_TBL_WP_POSTS, DB_TBL_WP_TERM_RELATIONSHIPS, DB_TBL_WP_TERM_TAXONOMY, DB_TBL_WP_TERMS, DB_TBL_WP_USERS, DB_TBL_WP_POSTMETA, DB_TBL_WP_POSTS);
+        // $sql = sprintf( "SELECT p.post_title, t.term_id, t.name FROM %s p LEFT JOIN %s rel ON rel.object_id = p.ID LEFT JOIN %s tax ON tax.term_taxonomy_id = rel.term_taxonomy_id LEFT JOIN %s t ON t.term_id = tax.term_id WHERE t.name LIKE '%s'",DB_TBL_WP_POSTS, DB_TBL_WP_TERM_RELATIONSHIPS,DB_TBL_WP_TERM_TAXONOMY,DB_TBL_WP_TERMS,$category );
+        // $sql = sprintf( "SELECT p.ID, t.term_id, t.name FROM %s p LEFT JOIN %s rel ON rel.object_id = p.ID LEFT JOIN %s tax ON tax.term_taxonomy_id = rel.term_taxonomy_id LEFT JOIN %s t ON t.term_id = tax.term_id WHERE t.name LIKE '%s'",DB_TBL_WP_POSTS, WP_TERM_RELATIONSHIPS,WP_TERM_TAXONOMY,WP_TERMS,$category );
+
+        $results = $dbi->query_to_multi_array($sql);
+        foreach ($results as $index => $post) {
+            $post["post_content"] = explode("<!--more-->", $post["post_content"]);
+            $post["post_content"] = preg_replace("/\[.*?\]/", "", strip_tags(array_shift($post["post_content"])));
+            if (strlen($post["post_content"]) > 150) {
+                $post["post_content"] = substr($post["post_content"], 0, 150) . " ...";
+            }
+            $results[$index]["post_content"] = $post["post_content"];
+            $results[$index]["comment_count"] = 0;
+        }
+
+        return $results;
+    }
+
+    public static function log_action($action_id, $user_id = null, $action_data = [])
+    {
+
+        global $dbi, $log_action_ids;
+        $action = !empty($log_action_ids[$action_id]) ? $log_action_ids[$action_id] : $action_id;
+        Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "User:{$user_id}::" . http_build_query($action_data, '', ', '), ["messages", "log action", $action]);
+
+        $action_data = serialize($action_data);
+
+        $dbi->insert(
+            DB_TBL_LOG,
+            [
+                "user_id" => $user_id,
+                "log_action_id" => $action_id,
+                "action_data" => $action_data,
+                "time" => date("Y-m-d H:i:s"),
+            ]
+        );
+    }
+
+    public static function get_logged_action($action_id, $user_id, $limit = 10)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT * FROM %s WHERE user_id = %d AND log_action_id = %d ORDER BY time DESC LIMIT 0, %d", DB_TBL_LOG, $user_id, $action_id, $limit);
+        $results = $dbi->query_to_multi_array($sql);
+
+        foreach ($results as $index => $result) {
+            $results[$index]["action_data"] = unserialize($result["action_data"]);
+        }
+
+        return $results;
+    }
+
+    public static function get_logged_user_cancellation_dates($user_id)
+    {
+
+        $plan_data = self::get_logged_action(LOG_ACTION_USER_SUBSCRIPTION_CANCELLED, $user_id, 100);
+        $return = [];
+
+        foreach ($plan_data as $data) {
+            $return[$data["action_data"]["plan_id"]] = $data["time"];
+        }
+
+        return $return;
+    }
+
+    public static function get_city_list_for_state($state)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT a.city FROM %s a WHERE a.state= '%s'", DB_TBL_API_CITY_LIST, $dbi->escape($state));
+        $results = $dbi->query_to_multi_array($sql);
+
+        return array_map(function ($value) {
+            return $value["city"];
+        }, $results);
+    }
+
+    public static function validate_google_recaptcha()
+    {
+
+        global $client, $post_data, $testcase;
+
+        if ($testcase) {
+            return true;
+        }
+        $captcha_data = [
+            "secret" => RECAPTCHA_SECRET_KEY,
+            "response" => $post_data["g-recaptcha-response"],
+            "remoteip" => $_SERVER["REMOTE_ADDR"],
+        ];
+        $stream = $client->request("https://www.google.com/recaptcha/api/siteverify", vbrowser::VBROWSER_METHOD_POST, $captcha_data);
+        $response = json_decode($stream["response"], true);
+
+        if (!$response["success"]) {
+            Behavior::system_log_action(__FILE__, __LINE__, __METHOD__, "Recapcha Failed", ["errors", "recapcha failed", ""]);
+        }
+
+
+        return ($response["success"]);
+    }
+
+    public static function get_url_type($link)
+    {
+
+        if (preg_match("/^#?[0-9]+@(.*?)\$/", $link, $url_type)) {
+            $url_type = $url_type[1];
+            if ("linkedin" == $url_type) {
+                $url_type = "linked-in";
+            }
+        } else {
+            $types = [
+                "google-plus" => "/plus\.google|googleusercontent\./i",
+                "facebook" => "/facebook\.|fbcdn\./i",
+                "youtube" => "/youtube\./i",
+                "pinterest" => "/pinterest\.|pinimg\./i",
+                "linked-in" => "/linkedin\.|licdn\./i",
+                "twitter" => "/twitter\.|twimg\./i",
+                "instagram" => "/instagram\./i",
+                "myspace" => "/myspace\.|myspacecdn\./i",
+                "gravatar" => "/gravatar\./i",
+                "vk" => "/vk\.com|userapi\.com/i",
+            ];
+
+            $url_type = "";
+            foreach ($types as $type => $pattern) {
+                if (preg_match($pattern, $link)) {
+                    $url_type = $type;
+                    break;
+                }
+            }
+        }
+
+        return $url_type;
+    }
+
+    public static function get_image_url_source($link)
+    {
+
+        $find_replace = [
+            "/^.*?graph.facebook.com\/([0-9]+)\/.*/im" => "https://www.facebook.com/\\1",
+        ];
+
+        foreach ($find_replace as $pattern => $replacement) {
+            $new_url = preg_replace($pattern, $replacement, $link);
+            if ($link != $new_url) {
+                break;
+            }
+        }
+
+        return ($link != $new_url) ? $new_url : "";
+    }
+
+    public static function imgcdn_url($url)
+    {
+
+        if (preg_match("/(?:devtemp\.)?socialcatfish\.com|berify\.com/", $url)) {
+            return $url;
+        }
+        $url = str_split(str_replace("/", "-IDS-", base64_encode($url)), 50);
+        return IMG_CDN_URL . implode("/", $url);
+    }
+
+    public static function print_imgcdn_url($url)
+    {
+
+        echo self::imgcdn_url($url);
+    }
+
+    public static function user_uploads_url($uploaded_url)
+    {
+
+        $url = explode("uploads" . DIRECTORY_SEPARATOR, $uploaded_url);
+        $filename = end($url);
+
+        return (file_exists(UPLOADS_PATH . $filename)) ? substr(BASE_URL, 0, -1) . str_replace("\\", "/", UPLOADS_URL . "/{$filename}") : USER_IMG_UPLOAD_URL . $filename;
+    }
+
+    public static function print_user_uploads_url($url)
+    {
+
+        echo self::user_uploads_url($url);
+    }
+
+    public static function log_request_execution_time($execution_start_time)
+    {
+
+        $error_message = error_get_last();
+
+        if ($error_message && ($error_message["type"] == E_ERROR || $error_message["type"] == E_PARSE)) {
+            $request = isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : "";
+            $referer = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : "";
+            error_log("\nMessage: {$error_message["message"]}\nFile: {$error_message["file"]}\nLine: {$error_message["line"]}\nRequest: {$request}\nReferer: {$referer}", 0);
+        }
+
+        $GLOBALS["behavior_page_execution_time"] = $duration = round(microtime(true) - $execution_start_time, 2);
+
+        $fp = fopen(ABS_PATH . "../request_execution_time.txt", "a");
+        fputcsv($fp, [
+            $_SERVER["REMOTE_ADDR"],
+            (!empty($_SERVER["HTTP_USER_AGENT"]) ? $_SERVER["HTTP_USER_AGENT"] : ""),
+            date("Y-m-d H:i:s"),
+            "{$_SERVER["REQUEST_SCHEME"]}://{$_SERVER["HTTP_HOST"]}{$_SERVER["REQUEST_URI"]}",
+            $duration,
+        ], "\t");
+        fclose($fp);
+
+        Behavior::log_action("execution_time");
+
+        Behavior::send_data([], true);
+
+        // AB Tracking
+        if (!empty($GLOBALS["ab_conversion_tracking_stack"])) {
+            $dbi = $GLOBALS["dbi"];
+            $fp = tmpfile();
+            $fp_meta = stream_get_meta_data($fp);
+
+            foreach ($GLOBALS["ab_conversion_tracking_stack"] as $event) {
+                $row_data = [
+                    "date" => date("Y-m-d H:i:s"),
+                    "user_id" => $GLOBALS["user_id"],
+                    "experiment_key" => $event["experiment_key"],
+                    "variation_key" => $event["experiment_key"],
+                    "category_key" => $event["category_key"],
+                    "session_id" => $event["user_id"],
+                    "utm_source" => $_SESSION["advertisement_data"]["source"] ?? "",
+                    "utm_medium" => $_SESSION["advertisement_data"]["medium"] ?? "",
+                    "utm_referer" => $_SESSION["advertisement_data"]["referer"] ?? "",
+                    "utm_campaign" => $_SESSION["advertisement_data"]["campaign"] ?? "",
+                ];
+
+                fputcsv($fp, $row_data);
+            }
+
+            $field_names = array_keys($row_data);
+
+            $dbi->load_data(DB_TBL_AB_CONVERSION_TRACKING, $fp_meta["uri"], $field_names);
+        }
+    }
+
+    public static function get_ip_info($ip)
+    {
+
+        global $dbi;
+
+        $ip_lng = ip2long($ip);
+
+        $sql = sprintf("SELECT * FROM %s WHERE %d BETWEEN ip_from AND ip_to;", DB_TBL_IP_INFO, $ip_lng);
+        $result = $dbi->query_to_array($sql);
+
+        return $result;
+    }
+
+    public static function blog_get_optimized_image($image, $high_res = false)
+    {
+
+        if (strpos($image, "devstaging.socialcatfish.com") !== false) {
+            return $image;
+        }
+
+        $optimized_image = preg_replace("/(\.[^\.]+)\$/im", ($high_res ? "-web-op-2x.jpg" : "-web-op.jpg"), $image);
+        $uri = parse_url($optimized_image);
+
+        $check_url = BLOG_PATH . "wp-content/" . preg_replace("/^.*?\/(uploads\/.*?)(?: |,|\$).*\$/im", "\\1", $optimized_image);
+
+        if (strpos($image, "new.socialcatfish.com") !== false) {
+            return $image;
+        }
+        $img_url = str_replace(["socialcatfish.com/blog/wp-content", "socialcatfish.com/scamfish/wp-content"], ["scamfishcdn.socialcatfish.com", "scamfishcdn.socialcatfish.com"], (file_exists($check_url) ? $optimized_image : $image));
+        $img_url = str_replace("/uploads", "", $img_url);
+        //$img_url = str_replace( ["scamfishcdn.socialcatfish.com/uploads", "spcdnblog.socialcatfish.com/uploads", "scamfishcdn.socialcatfish.com/themes", "spcdnblog.socialcatfish.com/themes"], [ "socialcatfish.com/scamfish/wp-content/uploads","socialcatfish.com/scamfish/wp-content/uploads", "socialcatfish.com/scamfish/wp-content/themes", "socialcatfish.com/scamfish/wp-content/themes" ], $img_url ); //Disabled CDN
+
+        return str_replace("devtemp.", "", $img_url);
+    }
+
+    public static function google_auth_sign_request($data, $secret_key)
+    {
+
+        return strtr(base64_encode(hash_hmac("sha1", $data, base64_decode(strtr($secret_key, "-_", "+/")), true)), "+/", "-_");
+    }
+
+    public static function google_auth_sign_url($url, $secret_key)
+    {
+
+        $uri = parse_url($url);
+        parse_str($uri["query"], $params);
+        $encoded_params = [];
+        foreach ($params as $key => $value) {
+            $encoded_params[] = $key . "=" . urlencode($value);
+        }
+        $sign_request = $uri["path"] . "?" . implode("&", $encoded_params);
+        $signature = self::google_auth_sign_request($sign_request, $secret_key);
+        return "{$uri["scheme"]}://{$uri["host"]}{$sign_request}&signature={$signature}";
+    }
+
+    public static function gdpr_block()
+    {
+
+        $gpdr_blocked_countries = array_fill_keys(['BE', 'BG', 'CZ', 'DK', 'DE', 'EE', 'IE', 'EL', 'ES', 'FR', 'HR', 'IT', 'CY', 'LV', 'LT', 'LU', 'HU', 'MT', 'NL', 'AT', 'PL', 'PT', 'RO', 'SI', 'SK', 'FI', 'SE'], 1);
+
+        if (empty($_SESSION["ip_country"])) {
+            // Mod of xml-sitemaps.com
+            if ($_SERVER["REMOTE_ADDR"] == "85.92.66.148") {
+                $ip_info = ["country_code" => "US"];
+            } else {
+                $ip_info = self::get_ip_info($_SERVER["REMOTE_ADDR"]);
+            }
+
+            $_SESSION["ip_country"] = $ip_info ? $ip_info["country_code"] : "";
+        }
+
+        if (!isset($_SESSION["gdpr-false"])) {
+            return (isset($gpdr_blocked_countries[$_SESSION["ip_country"]]));
+        } else {
+            return false;
+        }
+    }
+
+    public static function gdpr_log_ip($ip)
+    {
+
+        if (filter_var($ip, FILTER_VALIDATE_IP)) {
+            global $dbi;
+            $dbi->insert(
+                DB_TBL_GDPR_LOG,
+                [
+                    "ip_address" => $ip
+                ]
+            );
+        } else {
+            return;
+        }
+    }
+
+    public static function maintenance_mode_headers()
+    {
+
+        header("{$_SERVER["SERVER_PROTOCOL"]} 503 Service Unavailable");
+        header('Status: 503 Service Unavailable');
+        header('Retry-After: 300');
+    }
+
+    public static function js_controller($controller, $return = false)
+    {
+
+        if ($return) {
+            return sprintf(' data-%s="%s"', JS_MAIN_CONTROLLER, $controller);
+        } else {
+            printf(' data-%s="%s"', JS_MAIN_CONTROLLER, $controller);
+        }
+    }
+
+    public static function js_element_var($controller, $return = false)
+    {
+
+        if ($return) {
+            return sprintf(' data-%s="%s"', JS_ELEMENT_VAR, $controller);
+        } else {
+            printf(' data-%s="%s"', JS_ELEMENT_VAR, $controller);
+        }
+    }
+
+    public static function get_favicons_by_site_url($url)
+    {
+
+        $user_social_icon = "";
+        $domain = !empty($url) ? parse_url($url, PHP_URL_HOST) : "";
+
+        $host_parts = explode('.', $domain);
+        $host_parts = array_reverse($host_parts);
+
+        $usa_top_500 = [
+            "google.com", "youtube.com", "amazon.com", "facebook.com", "yahoo.com", "zoom.us", "reddit.com", "wikipedia.org", "myshopify.com", "ebay.com", "office.com", "instructure.com", "netflix.com", "cnn.com", "bing.com", "live.com", "microsoft.com", "nytimes.com", "twitch.tv", "apple.com", "microsoftonline.com", "instagram.com", "espn.com", "zillow.com", "chaturbate.com", "chase.com", "dropbox.com", "etsy.com", "linkedin.com", "adobe.com", "walmart.com", "foxnews.com", "salesforce.com", "okta.com", "twitter.com", "force.com", "quizlet.com", "craigslist.org", "livejasmin.com", "amazonaws.com", "aliexpress.com", "wellsfargo.com", "tmall.com", "indeed.com", "hulu.com", "breitbart.com", "imdb.com", "bestbuy.com", "stackoverflow.com", "washingtonpost.com", "homedepot.com", "msn.com", "spotify.com", "pornhub.com", "target.com", "qq.com", "heavy.com", "paypal.com", "github.com", "alibaba.com", "ca.gov", "ups.com", "sohu.com", "usps.com", "fivethirtyeight.com", "wordpress.com", "patch.com", "fandom.com", "bbc.com", "duckduckgo.com", "theguardian.com", "xfinity.com", "bongacams.com", "chegg.com", "weather.com", "soundcloud.com", "taobao.com", "canva.com", "baidu.com", "realtor.com", "ballotpedia.org", "intuit.com", "cnbc.com", "nih.gov", "cnet.com", "capitalone.com", "fidelity.com", "vimeo.com", "pinterest.com", "medium.com", "jd.com", "360.cn", "businessinsider.com", "xvideos.com", "stackexchange.com", "wayfair.com", "tiktok.com", "schoology.com", "airbnb.com", "att.com", "verizon.com", "bankofamerica.com", "fedex.com", "tumblr.com", "slack.com", "healthline.com", "yelp.com", "adp.com", "discord.com", "costco.com", "mheducation.com", "fiverr.com", "padlet.com", "roblox.com", "slickdeals.net", "usatoday.com", "forbes.com", "citi.com", "westernjournal.com", "wsj.com", "squarespace.com", "wix.com", "blackboard.com", "aol.com", "grammarly.com", "nbcnews.com", "npr.org", "godaddy.com", "lowes.com", "nypost.com", "glassdoor.com", "sina.com.cn", "tradingview.com", "webex.com", "go.com", "thegatewaypundit.com", "redd.it", "office365.com", "politico.com", "thesaurus.com", "box.com", "ameritrade.com", "dailymail.co.uk", "udemy.com", "nfl.com", "investopedia.com", "zendesk.com", "cbssports.com", "irs.gov", "disneyplus.com", "khanacademy.org", "weibo.com", "wikihow.com", "amazon.co.uk", "ny.gov", "booking.com", "myworkday.com", "xhamster.com", "cbsnews.com", "zoho.com", "tripadvisor.com", "redfin.com", "discover.com", "americanexpress.com", "bitexworld.com", "shutterstock.com", "bbc.co.uk", "pearson.com", "macys.com", "doordash.com", "newegg.com", "eatthis.com", "marketwatch.com", "cengage.com", "surveymonkey.com", "imgur.com", "trello.com", "weebly.com", "ikea.com", "worldometers.info", "constantcontact.com", "t-mobile.com", "hbomax.com", "pandora.com", "archive.org", "bloomberg.com", "taboola.com", "kohls.com", "goodreads.com", "schwab.com", "hootsuite.com", "collegeboard.org", "theepochtimes.com", "270towin.com", "gamepedia.com", "ecollege.com", "webmd.com", "qualtrics.com", "docusign.net", "getadblock.com", "realclearpolitics.com", "huffpost.com", "cdc.gov", "xnxx.com", "crunchyroll.com", "gap.com", "usbank.com", "nike.com", "yahoo.co.jp", "coursehero.com", "desmos.com", "w3schools.com", "patreon.com", "amazon.co.jp", "bhphotovideo.com", "dailycaller.com", "usnews.com", "onlyfans.com", "eventbrite.com", "thehill.com", "wetransfer.com", "creditonebank.com", "dell.com", "onlinesbi.com", "ed.gov", "thepiratebay.org", "csdn.net", "op.gg", "apnews.com", "chess.com", "trulia.com", "myworkdayjobs.com", "reuters.com", "cvs.com", "lotterypost.com", "spanishdict.com", "google.com.tw", "spectrum.net", "alipay.com", "syf.com", "quizizz.com", "drudgereport.com", "google.com.sg", "google.com.hk", "speedtest.net", "expedia.com", "mozilla.org", "cargurus.com", "outbrain.com", "kahoot.it", "brainly.com", "cloudfront.net", "taleo.net", "overstock.com", "accuweather.com", "loom.com", "samsclub.com", "linktr.ee", "audible.com", "t.co", "gotomeeting.com", "usaa.com", "teacherspayteachers.com", "mailchimp.com", "merriam-webster.com", "giphy.com", "investing.com", "adoptapet.com", "seesaw.me", "wikimedia.org", "state.gov", "whatsapp.com", "buzzfeed.com", "hp.com", "nbcsports.com", "joinhoney.com", "autotrader.com", "harvard.edu", "coursera.org", "unsplash.com", "pnc.com", "walgreens.com", "genius.com", "cbs.com", "people.com", "gotowebinar.com", "seekingalpha.com", "cars.com", "thedailybeast.com", "allrecipes.com", "commonapp.org", "symbolab.com", "discordapp.com", "tdameritrade.com", "wowhead.com", "ign.com", "tianya.cn", "robinhood.com", "nordstrom.com", "clever.com", "vanguard.com", "msnbc.com", "samsung.com", "mit.edu", "weather.gov", "steamcommunity.com", "mathxl.com", "inquisitr.com", "grubhub.com", "houzz.com", "shopify.com", "noaa.gov", "bedbathandbeyond.com", "feedly.com", "atlassian.net", "groupon.com", "fantasypros.com", "xinhuanet.com", "rottentomatoes.com", "skype.com", "researchgate.net", "churchofjesuschrist.org", "wunderground.com", "list-manage.com", "nextdoor.com", "uscis.gov", "chron.com", "creditkarma.com", "ksl.com", "adblockplus.org", "studentaid.gov", "wa.gov", "quora.com", "att.net", "ancestry.com", "staples.com", "onelogin.com", "biblegateway.com", "apartments.com", "dictionary.com", "britannica.com", "steampowered.com", "mlb.com", "bleacherreport.com", "norton.com", "kickstarter.com", "oracle.com", "instacart.com", "thestartmagazine.com", "aa.com", "rakuten.com", "evernote.com", "ziprecruiter.com", "southwest.com", "smartsheet.com", "dailymotion.com", "marriott.com", "webassign.net", "pcmag.com", "mypearson.com", "gamespot.com", "delta.com", "deviantart.com", "narvar.com", "theverge.com", "bestlifeonline.com", "arcgis.com", "mayoclinic.org", "spankbang.com", "state.tx.us", "latimes.com", "shein.com", "cuny.edu", "docusign.com", "fool.com", "verizonwireless.com", "icims.com", "messenger.com", "geeksforgeeks.org", "vitalsource.com", "clickfunnels.com", "zerohedge.com", "timeanddate.com", "offerup.com", "kaiserpermanente.org", "classlink.com", "united.com", "ultipro.com", "vistaprint.com", "sfgate.com", "mydailymagazine.com", "hubspot.com", "squareup.com", "xbox.com", "yourdailysportfix.com", "tmz.com", "aofex.com", "vrbo.com", "wish.com", "theatlantic.com", "chewy.com", "brobible.com", "kbb.com", "gamestop.com", "texas.gov", "independent.co.uk", "poshmark.com", "istockphoto.com", "ultimate-guitar.com", "kayak.com", "cbslocal.com", "parler.com", "247sports.com", "bbcollab.com", "teachable.com", "freepik.com", "4chan.org", "vox.com", "secnews.gr", "study.com", "newsweek.com", "nflbite.com", "ask.com", "urbandictionary.com", "ck12.org", "ap.org", "shutterfly.com", "sciencedirect.com", "pbs.org", "zappos.com", "redbubble.com", "draftkings.com", "mxc.com", "amazon.ca", "storage.googleapis.com", "suntrust.com", "behance.net", "techradar.com", "pinimg.com", "xianjichina.com", "telegram.org", "denverpost.com", "medicalnewstoday.com", "wiley.com", "swagbucks.com", "history.com", "nvidia.com", "time.com", "ssa.gov", "cornell.edu", "slate.com", "tesla.com", "diply.com", "stockx.com", "ibanking-services.com", "bankrate.com", "purdue.edu", "secureinternetbank.com", "dominos.com", "hotels.com", "asana.com", "foodnetwork.com", "retailmenot.com", "sephora.com", "ea.com", "etrade.com", "whitepages.com", "slader.com", "wixsite.com", "tdbank.com", "wegotthiscovered.com", "duolingo.com", "service-now.com", "crackstreams.com", "match.com", "auth0.com", "chicagotribune.com", "epicgames.com", "playstation.com", "citationmachine.net", "aweber.com", "td.com", "youporn.com", "manyvids.com", "vk.com", "bbb.org", "upwork.com", "kitco.com", "infusionsoft.com", "slideshare.net", "foxbusiness.com", "wordreference.com", "sparknotes.com", "citibankonline.com", "cj.com", "nyc.gov", "zazzle.com", "stanford.edu", "indiatimes.com", "experian.com"
+        ];
+
+        $popular_domains = [
+            "amazon", "android", "behance", "bing", "box", "buffer", "creativemarket", "delicious", "deviantart", "dribbble", "dropbox",
+            "envato", "etsy", "facebook", "flickr", "foursquare", "hi5", "howcast", "html-5", "instagram", "kickstarter", "linkedin", "medium",
+            "myspace", "path", "paypal", "periscope", "pinterest", "plaxo", "plus.google", "quora", "reddit", "scribd", "shutterstock", "skype",
+            "snapchat", "soundcloud", "spotify", "stumbleupon", "trello", "tumblr", "twitter", "vimeo", "vine", "whatsapp", "wikipedia", "wordpress", "yelp",
+            "youtube"
+        ];
+
+        if (preg_match('(' . implode('|', $popular_domains) . ')', $domain, $matches) && !empty($matches[0]) && file_exists(ASSETS_PATH . "/common/images/social-icons-popular/{$matches[0]}.png")) {
+            $user_social_icon = $GLOBALS["common_assets_url"] . "/images/social-icons-popular/{$matches[0]}.png";
+        } elseif (preg_match('(' . implode('|', $usa_top_500) . ')', $domain, $matches) && !empty($matches[0]) && file_exists(ASSETS_PATH . "/common/images/social-icons-top500/{$host_parts[1]}.png")) {
+            $user_social_icon = $GLOBALS["common_assets_url"] . "/images/social-icons-top500/{$host_parts[1]}.png";
+        } else {
+            $user_social_icon = "https://www.google.com/s2/favicons?domain=" . $host_parts[1] . "." . $host_parts[0];
+        }
+
+        return $user_social_icon;
+    }
+
+    public static function array_flatten(&$array, $prefix = "")
+    {
+
+        $return = [];
+
+        if (is_array($array)) {
+            foreach ($array as $key => $value) {
+                if (is_array($value)) {
+                    $return = $return + self::array_flatten($value, $prefix . (($prefix) ? "/" : "") . $key);
+                } else {
+                    $return[$prefix . ($prefix ? "/" : "") . $key] = $value;
+                }
+            }
+        }
+
+        return $return;
+    }
+
+    public static function xml_to_array(&$xml)
+    {
+
+        $array = [];
+
+        foreach ((array)$xml as $key => $value) {
+            if (is_object($value) || is_array($value)) {
+                $array[$key] = self::xml_to_array($value);
+            } else {
+                $array[$key] = $value;
+            }
+        }
+
+        return empty($array) ? "" : $array;
+    }
+
+    public static function tz_convert($time, $format = "Y-m-d H:i:s", $from_timezone = "UTC", $to_timezone = "America/Los_Angeles")
+    {
+
+        $format = is_null($format) ? "Y-m-d H:i:s" : $format;
+
+        try {
+            if (is_int($time)) {
+                $time = date("Y-m-d H:i:s", $time);
+            }
+
+            $time = new DateTime($time, new DateTimeZone($from_timezone));
+            $time->setTimezone(new DateTimeZone($to_timezone));
+            return $time->format($format);
+        } catch (Exception $e) {
+            return "";
+        }
+    }
+
+    public static function get_ip_api_usage($ip_address)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("SELECT COUNT(*) `count` FROM `%s` a WHERE a.date >= DATE_SUB(NOW(), INTERVAL 1 DAY) AND a.user_id IS NULL AND a.ip_address = '%s'", DB_TBL_API_CALLS, $dbi->escape($ip_address));
+        $results = $dbi->query_to_array($sql);
+
+        return $results["count"];
+    }
+
+    public static function language_get($lang_code)
+    {
+        $language_list = [
+            "Afar" => "aa",
+            "Abkhazian" => "ab",
+            "Avestan" => "ae",
+            "Afrikaans" => "af",
+            "Akan" => "ak",
+            "Amharic" => "am",
+            "Aragonese" => "an",
+            "Arabic" => "ar",
+            "Assamese" => "as",
+            "Avaric" => "av",
+            "Aymara" => "ay",
+            "Azerbaijani" => "az",
+            "Bashkir" => "ba",
+            "Belarusian" => "be",
+            "Bulgarian" => "bg",
+            "Bihari languages" => "bh",
+            "Bislama" => "bi",
+            "Bambara" => "bm",
+            "Bengali" => "bn",
+            "Tibetan" => "bo",
+            "Breton" => "br",
+            "Bosnian" => "bs",
+            "Catalan; Valencian" => "ca",
+            "Chechen" => "ce",
+            "Chamorro" => "ch",
+            "Corsican" => "co",
+            "Cree" => "cr",
+            "Czech" => "cs",
+            "Church Slavic; Old Slavonic; Church Slavonic; Old Bulgarian; Old Church Slavonic" => "cu",
+            "Chuvash" => "cv",
+            "Welsh" => "cy",
+            "Danish" => "da",
+            "German" => "de",
+            "Divehi; Dhivehi; Maldivian" => "dv",
+            "Dzongkha" => "dz",
+            "Ewe" => "ee",
+            "Greek, Modern (1453-)" => "el",
+            "English" => "en",
+            "Esperanto" => "eo",
+            "Spanish; Castilian" => "es",
+            "Estonian" => "et",
+            "Basque" => "eu",
+            "Persian" => "fa",
+            "Fulah" => "ff",
+            "Finnish" => "fi",
+            "Fijian" => "fj",
+            "Faroese" => "fo",
+            "French" => "fr",
+            "Western Frisian" => "fy",
+            "Irish" => "ga",
+            "Gaelic; Scottish Gaelic" => "gd",
+            "Galician" => "gl",
+            "Guarani" => "gn",
+            "Gujarati" => "gu",
+            "Manx" => "gv",
+            "Hausa" => "ha",
+            "Hebrew" => "he",
+            "Hindi" => "hi",
+            "Hiri Motu" => "ho",
+            "Croatian" => "hr",
+            "Haitian; Haitian Creole" => "ht",
+            "Hungarian" => "hu",
+            "Armenian" => "hy",
+            "Herero" => "hz",
+            "Interlingua (International Auxiliary Language Association)" => "ia",
+            "Indonesian" => "id",
+            "Interlingue; Occidental" => "ie",
+            "Igbo" => "ig",
+            "Sichuan Yi; Nuosu" => "ii",
+            "Inupiaq" => "ik",
+            "Ido" => "io",
+            "Icelandic" => "is",
+            "Italian" => "it",
+            "Inuktitut" => "iu",
+            "Japanese" => "ja",
+            "Javanese" => "jv",
+            "Georgian" => "ka",
+            "Kongo" => "kg",
+            "Kikuyu; Gikuyu" => "ki",
+            "Kuanyama; Kwanyama" => "kj",
+            "Kazakh" => "kk",
+            "Kalaallisut; Greenlandic" => "kl",
+            "Central Khmer" => "km",
+            "Kannada" => "kn",
+            "Korean" => "ko",
+            "Kanuri" => "kr",
+            "Kashmiri" => "ks",
+            "Kurdish" => "ku",
+            "Komi" => "kv",
+            "Cornish" => "kw",
+            "Kirghiz; Kyrgyz" => "ky",
+            "Latin" => "la",
+            "Luxembourgish; Letzeburgesch" => "lb",
+            "Ganda" => "lg",
+            "Limburgan; Limburger; Limburgish" => "li",
+            "Lingala" => "ln",
+            "Lao" => "lo",
+            "Lithuanian" => "lt",
+            "Luba-Katanga" => "lu",
+            "Latvian" => "lv",
+            "Malagasy" => "mg",
+            "Marshallese" => "mh",
+            "Maori" => "mi",
+            "Macedonian" => "mk",
+            "Malayalam" => "ml",
+            "Mongolian" => "mn",
+            "Marathi" => "mr",
+            "Malay" => "ms",
+            "Maltese" => "mt",
+            "Burmese" => "my",
+            "Nauru" => "na",
+            "Bokmål, Norwegian; Norwegian Bokmål" => "nb",
+            "Ndebele, North; North Ndebele" => "nd",
+            "Nepali" => "ne",
+            "Ndonga" => "ng",
+            "Dutch; Flemish" => "nl",
+            "Norwegian Nynorsk; Nynorsk, Norwegian" => "nn",
+            "Norwegian" => "no",
+            "Ndebele, South; South Ndebele" => "nr",
+            "Navajo; Navaho" => "nv",
+            "Chichewa; Chewa; Nyanja" => "ny",
+            "Occitan (post 1500)" => "oc",
+            "Ojibwa" => "oj",
+            "Oromo" => "om",
+            "Oriya" => "or",
+            "Ossetian; Ossetic" => "os",
+            "Panjabi; Punjabi" => "pa",
+            "Pali" => "pi",
+            "Polish" => "pl",
+            "Pushto; Pashto" => "ps",
+            "Portuguese" => "pt",
+            "Quechua" => "qu",
+            "Romansh" => "rm",
+            "Rundi" => "rn",
+            "Romanian; Moldavian; Moldovan" => "ro",
+            "Russian" => "ru",
+            "Kinyarwanda" => "rw",
+            "Sanskrit" => "sa",
+            "Sardinian" => "sc",
+            "Sindhi" => "sd",
+            "Northern Sami" => "se",
+            "Sango" => "sg",
+            "Sinhala; Sinhalese" => "si",
+            "Slovak" => "sk",
+            "Slovenian" => "sl",
+            "Samoan" => "sm",
+            "Shona" => "sn",
+            "Somali" => "so",
+            "Albanian" => "sq",
+            "Serbian" => "sr",
+            "Swati" => "ss",
+            "Sotho, Southern" => "st",
+            "Sundanese" => "su",
+            "Swedish" => "sv",
+            "Swahili" => "sw",
+            "Tamil" => "ta",
+            "Telugu" => "te",
+            "Tajik" => "tg",
+            "Thai" => "th",
+            "Tigrinya" => "ti",
+            "Turkmen" => "tk",
+            "Tagalog" => "tl",
+            "Tswana" => "tn",
+            "Tonga (Tonga Islands)" => "to",
+            "Turkish" => "tr",
+            "Tsonga" => "ts",
+            "Tatar" => "tt",
+            "Twi" => "tw",
+            "Tahitian" => "ty",
+            "Uighur; Uyghur" => "ug",
+            "Ukrainian" => "uk",
+            "Urdu" => "ur",
+            "Uzbek" => "uz",
+            "Venda" => "ve",
+            "Vietnamese" => "vi",
+            "Volapük" => "vo",
+            "Walloon" => "wa",
+            "Wolof" => "wo",
+            "Xhosa" => "xh",
+            "Yiddish" => "yi",
+            "Yoruba" => "yo",
+            "Zhuang; Chuang" => "za",
+            "Chinese" => "zh",
+            "Zulu" => "zu"
+        ];
+        return array_search($lang_code, $language_list);
+    }
+
+    function convert_to_hours_mins($time, $format = '%02d:%02d')
+    {
+        if ($time < 1) {
+            return;
+        }
+        $hours = floor($time / 60);
+        $minutes = ($time % 60);
+        return sprintf($format, $hours, $minutes);
+    }
+
+    public static function get_array_string_combinations($array, $value = [])
+    {
+
+        $index = count($value);
+        $array_keys = array_keys($array);
+        $last_key = $array_keys[count($array_keys) - 1];
+
+        if (isset($array_keys[$index]) && is_array($array[$array_keys[$index]])) {
+            $combination = [];
+
+            foreach ($array[$array_keys[$index]] as $_index => $_value) {
+                $new_array = $value;
+                $new_array[$array_keys[$index]] = $_value;
+
+                if ($last_key == $array_keys[$index]) {
+                    $combination[] = $new_array;
+                } else {
+                    $combination = array_merge($combination, self::get_array_string_combinations($array, $new_array));
+                }
+            }
+
+            return $combination;
+        }
+    }
+
+    public static function add_influencers($data)
+    {
+
+        global $dbi;
+        $dbi->insert(DB_TBL_DB_INFLUENCERS, $data);
+    }
+
+    public static function get_influencers($offset, $limit, $sort = "", $search_name = "")
+    {
+
+        global $dbi;
+
+        $sql1 = "";
+        if ($sort == "a") {
+            $sql1 = "ORDER BY NAME ";
+        }
+        if ($sort == "d") {
+            $sql1 = "ORDER BY NAME DESC ";
+        }
+
+        $sql2 = "";
+        if ($search_name != "") {
+            $sql2 = "WHERE name LIKE '%$search_name%'";
+        }
+
+        $sql = sprintf("SELECT * FROM `%s` %s %s LIMIT %d, %d", DB_TBL_DB_INFLUENCERS, $sql2, $sql1, $offset, $limit);
+        $result = $dbi->query_to_multi_array($sql);
+        return $result;
+    }
+
+    public static function count_influencers($search_name = "")
+    {
+
+        global $dbi;
+
+        $sql2 = "";
+        if ($search_name != "") {
+            $sql2 = "WHERE name LIKE '%$search_name%'";
+        }
+
+        $sql = sprintf("SELECT COUNT('id') as `count` FROM `%s` %s", DB_TBL_DB_INFLUENCERS, $sql2);
+        $result = $dbi->query_to_array($sql);
+        return $result["count"];
+    }
+
+    public static function delete_influencer($id)
+    {
+
+        global $dbi;
+
+        $sql = sprintf("DELETE FROM %s WHERE `id` = %d;", DB_TBL_DB_INFLUENCERS, $id);
+
+        return $dbi->query($sql);
+    }
+
+    public static function get_domain_name($domain)
+    {
+
+        $link_parse = parse_url($domain);
+        $host = str_replace("www.", "", $link_parse["host"]);
+        $parse_name = strtolower(substr($host, 0, strpos($host, ".")));
+        return $parse_name;
+    }
+
+    /**
+     * Extract domain portion from an email address
+     *
+     * @param string $email
+     * @return string
+     */
+    public static function extract_domain_from_email($email)
+    {
+
+        return preg_replace("/^.*?@(.*)\$/im", "\\1", strtolower($email));
+    }
+
+    /**
+     * Identify disposable email domains
+     *
+     * @param string $email
+     * @return bool
+     */
+    public static function is_disposable_email($email)
+    {
+
+        // Domain list retrieved from https://gist.github.com/michenriksen/8710649/
+        $domain_list = "0815.ru|0wnd.net|0wnd.org|10minutemail.co.za|10minutemail.com|123-m.com|1fsdfdsfsdf.tk|1pad.de|20minutemail.com|21cn.com|2fdgdfgdfgdf.tk|2prong.com|30minutemail.com|33mail.com|3trtretgfrfe.tk|4gfdsgfdgfd.tk|4warding.com|5ghgfhfghfgh.tk|6hjgjhgkilkj.tk|6paq.com|7tags.com|9ox.net|a-bc.net|agedmail.com|ama-trade.de|amilegit.com|amiri.net|amiriindustries.com|anonmails.de|anonymbox.com|antichef.com|antichef.net|antireg.ru|antispam.de|antispammail.de|armyspy.com|artman-conception.com|azmeil.tk|baxomale.ht.cx|beefmilk.com|bigstring.com|binkmail.com|bio-muesli.net|bobmail.info|bodhi.lawlita.com|bofthew.com|bootybay.de|boun.cr|bouncr.com|breakthru.com|brefmail.com|bsnow.net|bspamfree.org|bugmenot.com|bund.us|burstmail.info|buymoreplays.com|byom.de|c2.hu|card.zp.ua|casualdx.com|cek.pm|centermail.com|centermail.net|chammy.info|childsavetrust.org|chogmail.com|choicemail1.com|clixser.com|cmail.net|cmail.org|coldemail.info|cool.fr.nf|courriel.fr.nf|courrieltemporaire.com|crapmail.org|cust.in|cuvox.de|d3p.dk|dacoolest.com|dandikmail.com|dayrep.com|dcemail.com|deadaddress.com|deadspam.com|delikkt.de|despam.it|despammed.com|devnullmail.com|dfgh.net|digitalsanctuary.com|dingbone.com|disposableaddress.com|disposableemailaddresses.com|disposableinbox.com|dispose.it|dispostable.com|dodgeit.com|dodgit.com|donemail.ru|dontreg.com|dontsendmespam.de|drdrb.net|dump-email.info|dumpandjunk.com|dumpyemail.com|e-mail.com|e-mail.org|e4ward.com|easytrashmail.com|einmalmail.de|einrot.com|eintagsmail.de|emailgo.de|emailias.com|emaillime.com|emailsensei.com|emailtemporanea.com|emailtemporanea.net|emailtemporar.ro|emailtemporario.com.br|emailthe.net|emailtmp.com|emailwarden.com|emailx.at.hm|emailxfer.com|emeil.in|emeil.ir|emz.net|ero-tube.org|evopo.com|explodemail.com|express.net.ua|eyepaste.com|fakeinbox.com|fakeinformation.com|fansworldwide.de|fantasymail.de|fightallspam.com|filzmail.com|fivemail.de|fleckens.hu|frapmail.com|friendlymail.co.uk|fuckingduh.com|fudgerub.com|fyii.de|garliclife.com|gehensiemirnichtaufdensack.de|get2mail.fr|getairmail.com|getmails.eu|getonemail.com|giantmail.de|girlsundertheinfluence.com|gishpuppy.com|gmial.com|goemailgo.com|gotmail.net|gotmail.org|gotti.otherinbox.com|great-host.in|greensloth.com|grr.la|gsrv.co.uk|guerillamail.biz|guerillamail.com|guerrillamail.biz|guerrillamail.com|guerrillamail.de|guerrillamail.info|guerrillamail.net|guerrillamail.org|guerrillamailblock.com|gustr.com|harakirimail.com|hat-geld.de|hatespam.org|herp.in|hidemail.de|hidzz.com|hmamail.com|hopemail.biz|ieh-mail.de|ikbenspamvrij.nl|imails.info|inbax.tk|inbox.si|inboxalias.com|inboxclean.com|inboxclean.org|infocom.zp.ua|instant-mail.de|ip6.li|irish2me.com|iwi.net|jetable.com|jetable.fr.nf|jetable.net|jetable.org|jnxjn.com|jourrapide.com|jsrsolutions.com|kasmail.com|kaspop.com|killmail.com|killmail.net|klassmaster.com|klzlk.com|koszmail.pl|kurzepost.de|lawlita.com|letthemeatspam.com|lhsdv.com|lifebyfood.com|link2mail.net|litedrop.com|lol.ovpn.to|lolfreak.net|lookugly.com|lortemail.dk|lr78.com|lroid.com|lukop.dk|m21.cc|mail-filter.com|mail-temporaire.fr|mail.by|mail.mezimages.net|mail.zp.ua|mail1a.de|mail21.cc|mail2rss.org|mail333.com|mailbidon.com|mailbiz.biz|mailblocks.com|mailbucket.org|mailcat.biz|mailcatch.com|mailde.de|mailde.info|maildrop.cc|maileimer.de|mailexpire.com|mailfa.tk|mailforspam.com|mailfreeonline.com|mailguard.me|mailin8r.com|mailinater.com|mailinator.com|mailinator.net|mailinator.org|mailinator2.com|mailincubator.com|mailismagic.com|mailme.lv|mailme24.com|mailmetrash.com|mailmoat.com|mailms.com|mailnesia.com|mailnull.com|mailorg.org|mailpick.biz|mailrock.biz|mailscrap.com|mailshell.com|mailsiphon.com|mailtemp.info|mailtome.de|mailtothis.com|mailtrash.net|mailtv.net|mailtv.tv|mailzilla.com|makemetheking.com|manybrain.com|mbx.cc|mega.zik.dj|meinspamschutz.de|meltmail.com|messagebeamer.de|mezimages.net|ministry-of-silly-walks.de|mintemail.com|misterpinball.de|moncourrier.fr.nf|monemail.fr.nf|monmail.fr.nf|monumentmail.com|mt2009.com|mt2014.com|mycard.net.ua|mycleaninbox.net|mymail-in.net|mypacks.net|mypartyclip.de|myphantomemail.com|mysamp.de|mytempemail.com|mytempmail.com|mytrashmail.com|nabuma.com|neomailbox.com|nepwk.com|nervmich.net|nervtmich.net|netmails.com|netmails.net|neverbox.com|nice-4u.com|nincsmail.hu|nnh.com|no-spam.ws|noblepioneer.com|nomail.pw|nomail.xl.cx|nomail2me.com|nomorespamemails.com|nospam.ze.tc|nospam4.us|nospamfor.us|nospammail.net|notmailinator.com|nowhere.org|nowmymail.com|nurfuerspam.de|nus.edu.sg|objectmail.com|obobbo.com|odnorazovoe.ru|oneoffemail.com|onewaymail.com|onlatedotcom.info|online.ms|opayq.com|ordinaryamerican.net|otherinbox.com|ovpn.to|owlpic.com|pancakemail.com|pcusers.otherinbox.com|pjjkp.com|plexolan.de|poczta.onet.pl|politikerclub.de|poofy.org|pookmail.com|privacy.net|privatdemail.net|proxymail.eu|prtnx.com|putthisinyourspamdatabase.com|putthisinyourspamdatabase.com|qq.com|quickinbox.com|rcpt.at|reallymymail.com|realtyalerts.ca|recode.me|recursor.net|reliable-mail.com|rhyta.com|rmqkr.net|royal.net|rtrtr.com|s0ny.net|safe-mail.net|safersignup.de|safetymail.info|safetypost.de|saynotospams.com|schafmail.de|schrott-email.de|secretemail.de|secure-mail.biz|senseless-entertainment.com|services391.com|sharklasers.com|shieldemail.com|shiftmail.com|shitmail.me|shitware.nl|shmeriously.com|shortmail.net|sibmail.com|sinnlos-mail.de|slapsfromlastnight.com|slaskpost.se|smashmail.de|smellfear.com|snakemail.com|sneakemail.com|sneakmail.de|snkmail.com|sofimail.com|solvemail.info|sogetthis.com|soodonims.com|spam4.me|spamail.de|spamarrest.com|spambob.net|spambog.ru|spambox.us|spamcannon.com|spamcannon.net|spamcon.org|spamcorptastic.com|spamcowboy.com|spamcowboy.net|spamcowboy.org|spamday.com|spamex.com|spamfree.eu|spamfree24.com|spamfree24.de|spamfree24.org|spamgoes.in|spamgourmet.com|spamgourmet.net|spamgourmet.org|spamherelots.com|spamherelots.com|spamhereplease.com|spamhereplease.com|spamhole.com|spamify.com|spaml.de|spammotel.com|spamobox.com|spamslicer.com|spamspot.com|spamthis.co.uk|spamtroll.net|speed.1s.fr|spoofmail.de|stuffmail.de|super-auswahl.de|supergreatmail.com|supermailer.jp|superrito.com|superstachel.de|suremail.info|talkinator.com|teewars.org|teleworm.com|teleworm.us|temp-mail.org|temp-mail.ru|tempe-mail.com|tempemail.co.za|tempemail.com|tempemail.net|tempemail.net|tempinbox.co.uk|tempinbox.com|tempmail.eu|tempmaildemo.com|tempmailer.com|tempmailer.de|tempomail.fr|temporaryemail.net|temporaryforwarding.com|temporaryinbox.com|temporarymailaddress.com|tempthe.net|thankyou2010.com|thc.st|thelimestones.com|thisisnotmyrealemail.com|thismail.net|throwawayemailaddress.com|tilien.com|tittbit.in|tizi.com|tmailinator.com|toomail.biz|topranklist.de|tradermail.info|trash-mail.at|trash-mail.com|trash-mail.de|trash2009.com|trashdevil.com|trashemail.de|trashmail.at|trashmail.com|trashmail.de|trashmail.me|trashmail.net|trashmail.org|trashymail.com|trialmail.de|trillianpro.com|twinmail.de|tyldd.com|uggsrock.com|umail.net|uroid.com|us.af|venompen.com|veryrealemail.com|viditag.com|viralplays.com|vpn.st|vsimcard.com|vubby.com|wasteland.rfc822.org|webemail.me|weg-werf-email.de|wegwerf-emails.de|wegwerfadresse.de|wegwerfemail.com|wegwerfemail.de|wegwerfmail.de|wegwerfmail.info|wegwerfmail.net|wegwerfmail.org|wh4f.org|whyspam.me|willhackforfood.biz|willselfdestruct.com|winemaven.info|wronghead.com|www.e4ward.com|www.mailinator.com|wwwnew.eu|x.ip6.li|xagloo.com|xemaps.com|xents.com|xmaily.com|xoxy.net|yep.it|yogamaven.com|yopmail.com|yopmail.fr|yopmail.net|yourdomain.com|yuurok.com|z1p.biz|za.com|zehnminuten.de|zehnminutenmail.de|zippymail.info|zoemail.net|zomg.info";
+
+        $domain = self::extract_domain_from_email($email);
+
+        return preg_match("/\\b" . preg_quote($domain, "/") . "\\b/i", $domain_list);
+    }
+
+    /**
+     * Is email from a common service provider?
+     *
+     * @param string $email
+     * @return string
+     */
+    public static function is_common_email_domain($email)
+    {
+
+        // Domain list retrieved from https://gist.github.com/mavieth/418b0ba7b3525517dd85b31ee881b2ec
+        $domain_list = "aol.com|att.net|comcast.net|facebook.com|gmail.com|gmx.com|googlemail.com|google.com|hotmail.com|hotmail.co.uk|mac.com|me.com|mail.com|msn.com|live.com|sbcglobal.net|verizon.net|yahoo.com|yahoo.co.uk|email.com|fastmail.fm|games.com|gmx.net|hush.com|hushmail.com|icloud.com|iname.com|inbox.com|lavabit.com|love.com|outlook.com|pobox.com|protonmail.ch|protonmail.com|tutanota.de|tutanota.com|tutamail.com|tuta.io|keemail.me|rocketmail.com|safe-mail.net|wow.com|ygm.com|ymail.com|zoho.com|yandex.com|bellsouth.net|charter.net|cox.net|earthlink.net|juno.com|btinternet.com|virginmedia.com|blueyonder.co.uk|freeserve.co.uk|live.co.uk|ntlworld.com|o2.co.uk|orange.net|sky.com|talktalk.co.uk|tiscali.co.uk|virgin.net|wanadoo.co.uk|bt.com|sina.com|sina.cn|qq.com|naver.com|hanmail.net|daum.net|nate.com|yahoo.co.jp|yahoo.co.kr|yahoo.co.id|yahoo.co.in|yahoo.com.sg|yahoo.com.ph|163.com|yeah.net|126.com|21cn.com|aliyun.com|foxmail.com|hotmail.fr|live.fr|laposte.net|yahoo.fr|wanadoo.fr|orange.fr|gmx.fr|sfr.fr|neuf.fr|free.fr|gmx.de|hotmail.de|live.de|online.de|t-online.de|web.de|yahoo.de|libero.it|virgilio.it|hotmail.it|aol.it|tiscali.it|alice.it|live.it|yahoo.it|email.it|tin.it|poste.it|teletu.it|mail.ru|rambler.ru|yandex.ru|ya.ru|list.ru|hotmail.be|live.be|skynet.be|voo.be|tvcablenet.be|telenet.be|hotmail.com.ar|live.com.ar|yahoo.com.ar|fibertel.com.ar|speedy.com.ar|arnet.com.ar|yahoo.com.mx|live.com.mx|hotmail.es|hotmail.com.mx|prodigy.net.mx|yahoo.ca|hotmail.ca|bell.net|shaw.ca|sympatico.ca|rogers.com|yahoo.com.br|hotmail.com.br|outlook.com.br|uol.com.br|bol.com.br|terra.com.br|ig.com.br|itelefonica.com.br|r7.com|zipmail.com.br|globo.com|globomail.com|oi.com.br";
+
+        // Whitelist Socialcatfish.com domain
+        $domain_list .= "|socialcatfish.com";
+
+        $domain = self::extract_domain_from_email($email);
+
+        return preg_match("/\\b" . preg_quote($domain, "/") . "\\b/i", $domain_list);
+    }
+
+    public static function address_format($address)
+    {
+
+        $a = explode(',', ucwords($address));
+        $b = strtoupper(end($a));
+        array_pop($a);
+        array_push($a, $b);
+        return implode(',', $a);
+    }
 }
-    $module = "404";
-    $page_title = "People Search - Socialcatfish.com";
-    $page_description = "Find anyone online using socialcatifish.com image, phone, email, name and username searches. We help you search for people and verify online connections.";
-    header("{$_SERVER["SERVER_PROTOCOL"]} 404 Not Found");
+
+
+$execution_start_time = microtime(true);
+register_shutdown_function(["SCF", "log_request_execution_time"], $execution_start_time);
