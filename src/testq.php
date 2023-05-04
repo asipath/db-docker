@@ -1,5 +1,6 @@
 <?php
 
+//coment
 class SCF
 {
     public static function init_vars()
