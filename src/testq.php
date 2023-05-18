@@ -12,7 +12,7 @@
 namespace DataSource;
 
 class IDI extends \DataSource\Base
-{
+    {
     const
         SDK_VERSION = 1.0,
         AUTH_VALIDITY = 1680,
@@ -22,22 +22,22 @@ class IDI extends \DataSource\Base
         API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
 
     private
-        $client,
-        $clientID,
-        $secretKey,
-        $authToken,
-        $authURL,
-        $searchURL,
-        $lastAuthTime,
-        $authCacheFile;
+    $client,
+    $clientID,
+    $secretKey,
+    $authToken,
+    $authURL,
+    $searchURL,
+    $lastAuthTime,
+    $authCacheFile;
 
     public
-        $configDPPA = "none",
-        $configGLBA = "otheruse",
-        $configFields = ["name", "dob", "address", "phone", "relationship", "email"],
-        $configFieldsPremium = ["bankruptcy", "property", "professional", "aircraft", "criminal", "lien", "judgment", "isDead"],
-        $useAPI = true,
-        $useTeaserAPI = false;
+    $configDPPA = "none",
+    $configGLBA = "otheruse",
+    $configFields = ["name", "dob", "address", "phone", "relationship", "email"],
+    $configFieldsPremium = ["bankruptcy", "property", "professional", "aircraft", "criminal", "lien", "judgment", "isDead"],
+    $useAPI = true,
+    $useTeaserAPI = false;
 
     /**
      * IDI Class Constructor
@@ -47,7 +47,7 @@ class IDI extends \DataSource\Base
      * @param bool $sandboxEnv
      */
     public function __construct($clientID, $secretKey, $sandboxEnv = true)
-    {
+        {
 
         $this->clientID = $clientID;
         $this->secretKey = $secretKey;
@@ -68,7 +68,7 @@ class IDI extends \DataSource\Base
         ];
 
         $this->authCacheFile = CACHE_PATH . "idi_auth";
-    }
+        }
 
     /**
      * Generate Authorization Token
@@ -76,7 +76,7 @@ class IDI extends \DataSource\Base
      * @return bool
      */
     private function generateAuthToken()
-    {
+        {
 
         if (file_exists($this->authCacheFile)) {
             $data = json_decode(file_get_contents($this->authCacheFile), true);
@@ -85,10 +85,10 @@ class IDI extends \DataSource\Base
                 $this->lastAuthTime = $data["time"];
 
                 return true;
-            } else {
+                } else {
                 @unlink($this->authCacheFile);
+                }
             }
-        }
 
         $params = [
             "dppa" => $this->configDPPA,
@@ -103,10 +103,10 @@ class IDI extends \DataSource\Base
 
         if ($this->authToken) {
             file_put_contents($this->authCacheFile, json_encode(["token" => $this->authToken, "time" => $this->lastAuthTime]));
-        }
+            }
 
         return !empty($this->authToken);
-    }
+        }
 
     /**
      * Send Search API Request
@@ -116,18 +116,18 @@ class IDI extends \DataSource\Base
      * @return mixed
      */
     public function runSearch($searchParameters, $returnResultsOnly = true, $premiumSearch = false)
-    {
+        {
 
         if (!empty($searchParameters["age"])) {
             if (is_numeric($searchParameters["age"])) {
                 $searchParameters["ageMin"] = $searchParameters["age"];
-            } elseif (preg_match("/^([0-9]+) ?\- ?([0-9]+)/", $searchParameters["age"], $ageRange)) {
+                } elseif (preg_match("/^([0-9]+) ?\- ?([0-9]+)/", $searchParameters["age"], $ageRange)) {
                 $searchParameters["ageMin"] = $ageRange[1];
                 $searchParameters["ageMax"] = $ageRange[2];
-            }
+                }
 
             unset($searchParameters["age"]);
-        }
+            }
 
         $paramStack = [];
         $searchParameters = array_filter(array_intersect_key($searchParameters, array_fill_keys(["email", "phonenumber", "firstName", "lastName", "middleName", "state", "city", "ageMin", "ageMax", "searchType", "dob", "pidlist", "referenceId"], "")));
@@ -136,15 +136,15 @@ class IDI extends \DataSource\Base
         if (!empty($searchParameters["searchType"])) {
             if ($searchParameters["searchType"] == "CriminalSearch") {
                 $searchParameters["fields"] = ["criminal"];
+                }
             }
-        }
 
         if ($this->useAPI) {
             if (!$this->useTeaserAPI) {
                 $searchParameters["searchType"] = "APISearch";
-            } else {
+                } else {
                 unset($searchParameters["fields"]);
-            }
+                }
 
             $nickNameSearch = (!$this->useTeaserAPI);
             $usePIDSearch = false;
@@ -160,13 +160,13 @@ class IDI extends \DataSource\Base
 
                     if ($nickNameSearch) {
                         $searchParameters["nicknamesearch"] = true;
-                    } else {
+                        } else {
                         unset($searchParameters["nicknamesearch"]);
-                    }
+                        }
 
                     if (!$usePIDSearch) {
                         $paramStack[] = $searchParameters;
-                    } else {
+                        } else {
                         $searchParameters = array_shift($paramStack);
                         $pidList = $this->getPIDListForSearch($searchParameters);
                         $searchParametersForPIDSearch = [
@@ -174,7 +174,7 @@ class IDI extends \DataSource\Base
                             "fields" => $searchParameters["fields"],
                             "searchType" => $searchParameters["searchType"],
                         ];
-                    }
+                        }
 
                     $stream = $this->client->request($this->searchURL . ($this->useTeaserAPI ? "TeaserIndicators" : ""), \vbrowser::VBROWSER_METHOD_POST, json_encode($usePIDSearch ? $searchParametersForPIDSearch : $searchParameters));
                     $response = json_decode($stream["response"], true);
@@ -182,22 +182,22 @@ class IDI extends \DataSource\Base
                     $flag = [];
                     if ($usePIDSearch) {
                         $flag[] = "P";
-                    }
+                        }
                     if ($nickNameSearch) {
                         $flag[] = "N";
-                    }
+                        }
                     if (!empty($searchParameters["city"])) {
                         $flag[] = "C";
-                    }
+                        }
                     if (!empty($searchParameters["state"])) {
                         $flag[] = "S";
-                    }
+                        }
                     if (!empty($searchParameters["searchType"]) && $searchParameters["searchType"] == "CriminalSearch") {
                         $flag[] = "CR";
-                    }
+                        }
                     if (!empty($searchParameters["referenceId"]) && $searchParameters["referenceId"] == "teaser/nonbillable") {
                         $flag[] = "NB";
-                    }
+                        }
 
                     \Search::add_to_data_source_stack(SEARCH_ENGINE_IDI, implode("", $flag), count($response["result"]));
 
@@ -208,12 +208,12 @@ class IDI extends \DataSource\Base
                                     $searchParameters["city"] = "";
                                     $retry--;
                                     break;
-                                } elseif (!empty($searchParameters["state"])) {
+                                    } elseif (!empty($searchParameters["state"])) {
                                     $searchParameters["state"] = "";
                                     $retry--;
                                     break;
+                                    }
                                 }
-                            }
 
                             return $returnResultsOnly ? $this->parseResults($response) : $response;
 
@@ -224,62 +224,62 @@ class IDI extends \DataSource\Base
                                 if ($nickNameSearch) {
                                     $nickNameSearch = false;
                                     break;
-                                } else {
+                                    } else {
                                     $usePIDSearch = true;
                                     $retry--;
                                     break;
-                                }
-                            } else {
+                                    }
+                                } else {
                                 break 2;
-                            }
+                                }
 
                         case 401:
                             @unlink($this->authCacheFile);
                             $this->authToken = "";
                             $this->lastAuthTime = null;
                             break;
+                        }
                     }
                 }
-            }
-        } else {
+            } else {
             for ($try = 1; $try <= 5; $try++) {
                 $response = $this->localSearch($searchParameters);
 
                 $flag = [];
                 if (!empty($searchParameters["city"])) {
                     $flag[] = "C";
-                }
+                    }
                 if (!empty($searchParameters["state"])) {
                     $flag[] = "S";
-                }
+                    }
                 if (!empty($searchParameters["ageMin"]) || !empty($searchParameters["ageMax"])) {
                     $flag[] = "A";
-                }
+                    }
 
                 \Search::add_to_data_source_stack(SEARCH_ENGINE_IDI_LOCAL, implode("", $flag), count($response["result"]));
 
                 if (empty($response["result"])) {
                     if (isset($searchParameters["ageMin"]) || isset($searchParameters["ageMax"])) {
                         unset($searchParameters["ageMin"], $searchParameters["ageMax"]);
-                    } elseif (isset($searchParameters["city"])) {
+                        } elseif (isset($searchParameters["city"])) {
                         unset($searchParameters["city"]);
-                    } elseif (isset($searchParameters["state"])) {
+                        } elseif (isset($searchParameters["state"])) {
                         unset($searchParameters["state"]);
-                    } else {
+                        } else {
                         break;
-                    }
-                } else {
+                        }
+                    } else {
                     $response = $this->parseLocalResults($response);
                     return $returnResultsOnly ? $this->parseResults($response) : $response;
+                    }
                 }
             }
-        }
 
         return false;
-    }
+        }
 
     public function parseLocalResults($response)
-    {
+        {
 
         $reports = [];
         foreach ($response["result"] as $index => $report) {
@@ -293,13 +293,13 @@ class IDI extends \DataSource\Base
                         "first" => ucwords(strtolower(array_shift($data))),
                         "last" => ucwords(strtolower(array_shift($data))),
                     ];
-                }, explode("\x01", $report["names"])),
+                    }, explode("\x01", $report["names"])),
                 "dob" => array_map(function ($data) {
 
                     return [
                         "age" => $data,
                     ];
-                }, explode("\x01", $report["ages"])),
+                    }, explode("\x01", $report["ages"])),
                 "address" => array_map(function ($data) {
 
                     $data = explode("|", $data);
@@ -308,7 +308,7 @@ class IDI extends \DataSource\Base
                         "city" => ucwords(strtolower(array_shift($data))),
                         "state" => array_shift($data),
                     ];
-                }, explode("\x01", $report["locations"])),
+                    }, explode("\x01", $report["locations"])),
                 "phone" => empty($report["phone"]) ? [] : [["number" => strtolower($report["phone"])]],
                 "relationship" => array_map(function ($data) {
 
@@ -321,14 +321,14 @@ class IDI extends \DataSource\Base
                             "last" => ucwords(strtolower(array_shift($data))),
                         ],
                     ];
-                }, explode("\x01", $report["relationships"])),
+                    }, explode("\x01", $report["relationships"])),
                 "email" => empty($report["email"]) ? [] : [["data" => strtolower($report["email"])]],
                 "pid" => $report["pid"],
             ];
-        }
+            }
 
         return ["result" => $reports];
-    }
+        }
 
     /**
      * Parse IDI API Response and return results
@@ -337,7 +337,7 @@ class IDI extends \DataSource\Base
      * @return array
      */
     public function parseResults($response)
-    {
+        {
 
         // Todo: Come up with a logic to identify the gender
         // Todo 10 -o Savindra -c Testing: Check whether the Job data are getting populated Properly
@@ -381,11 +381,11 @@ class IDI extends \DataSource\Base
 
                                 if (isset($dataPointValue["dob"]["age"])) {
                                     $record_dates[$record_date_struct[$key]][$dataPointKey]['age'] = $dataPointValue["dob"]["age"];
+                                    }
                                 }
                             }
                         }
                     }
-                }
                 unset($dataPoint);
 
                 $names = $result["name"];
@@ -395,7 +395,7 @@ class IDI extends \DataSource\Base
                 $relations = array_column($result["relationship"], "name");
                 foreach ($relations as &$relation_data) {
                     $relation_data = "{$relation_data["first"]} {$relation_data["last"]}";
-                }
+                    }
                 unset($relation_data);
 
                 $age = array_column($result["dob"], "age");
@@ -404,10 +404,10 @@ class IDI extends \DataSource\Base
 
                     if (!isset($data["data"])) {
                         $data["data"] = implode(", ", array_filter([$data["city"], $data["state"]]));
-                    }
+                        }
 
                     return $data;
-                }, $result["address"]);
+                    }, $result["address"]);
 
                 $person = [
                     "isDead" => $result["isDead"],
@@ -448,13 +448,13 @@ class IDI extends \DataSource\Base
                     return preg_replace_callback("/(, [a-z]{2})( [0-9]+)/i", function ($state) {
 
                         return strtoupper($state[1]) . $state[2];
-                    }, $data);
-                }, $person["locations"]);
+                        }, $data);
+                    }, $person["locations"]);
 
                 if (!$this->useAPI || ($this->useAPI && $this->useTeaserAPI)) {
                     $person["teaser_request"] = true;
                     $person["teaser_api_request"] = ($this->useAPI && $this->useTeaserAPI);
-                }
+                    }
 
                 // Premium Data
                 $premiumData = [];
@@ -475,16 +475,16 @@ class IDI extends \DataSource\Base
                 foreach ($premiumDataKeys as $premiumKey => $mappedKey) {
                     if (!empty($result[$premiumKey])) {
                         $premiumData[$mappedKey] = true;
+                        }
                     }
-                }
 
                 $person["premium_data"] = $premiumData;
 
                 $results[] = $person;
+                }
             }
-        }
         return ["meta" => [], "data" => $results];
-    }
+        }
 
     /**
      * Sort Data by Rank
@@ -493,20 +493,20 @@ class IDI extends \DataSource\Base
      * @return array
      */
     private function sortDataPoint($data)
-    {
+        {
 
         usort($data, function ($element_1, $element_2) {
 
             $field = isset($element_1["meta"]["rank"]) ? "rank" : "count";
 
             return ($element_1["meta"][$field] < $element_2["meta"][$field]) ? 1 : (($element_1["meta"][$field] == $element_2["meta"][$field]) ? 0 : -1);
-        });
+            });
 
         return $data;
-    }
+        }
 
     public function mapParams($params)
-    {
+        {
 
         if (!empty($params["full_name"])) {
             $name_parts = explode(" ", trim($params["full_name"]));
@@ -516,8 +516,8 @@ class IDI extends \DataSource\Base
 
             if (count($name_parts)) {
                 $params["middle_name"] = array_shift($name_parts);
+                }
             }
-        }
 
         $return = [
             "age" => $params["age"] ?? "",
@@ -536,28 +536,28 @@ class IDI extends \DataSource\Base
 
         if (!empty($params["use_ccpa_key"])) {
             $return["referenceId"] = "opt-out";
-        }
+            }
         if (!empty($params["reference"])) {
             $return["referenceId"] = $params["reference"];
-        }
+            }
         return $return;
-    }
+        }
 
     private function getDBI()
-    {
+        {
 
         if (DEBUG) {
             $dbi = new \DBI();
             $dbi->connect(IDI_TEASER_DB_HOST, IDI_TEASER_DB_USER, IDI_TEASER_DB_PASSWORD, IDI_TEASER_DB_NAME, false . false);
-        } else {
+            } else {
             $dbi = $GLOBALS["dbi"];
-        }
+            }
 
         return $dbi;
-    }
+        }
 
     private function getPIDListForSearch($params)
-    {
+        {
 
         $dbi = $this->getDBI();
 
@@ -566,51 +566,51 @@ class IDI extends \DataSource\Base
         $filters = [];
         if (!empty($state)) {
             $filters[] = sprintf("state = '%s'", $dbi->escape($state));
-        }
+            }
         if (!empty($city)) {
             $filters[] = sprintf("city = '%s'", $dbi->escape($city));
-        }
+            }
         $filters = (!empty($filters) ? " AND " : "") . implode(" AND ", $filters);
 
         $sql = sprintf("SELECT pid FROM `%s` WHERE fn = '%s' AND ln = '%s' %s GROUP BY pid;", DB_TBL_IDI_TEASER_DATA, $dbi->escape($firstName), $dbi->escape($lastName), $filters);
         $results = $dbi->query_to_multi_array($sql);
 
         return array_column($results, "pid");
-    }
+        }
 
     private function localSearch($searchParams, $limit = 100)
-    {
+        {
 
         $dbi = $this->getDBI();
 
         if (empty($searchParams["firstName"]) || empty($searchParams["lastName"])) {
             return [];
-        }
+            }
 
         $filters = [];
 
         if ($searchParams["firstName"]) {
             $filters[] = sprintf("i.fn = '%s'", $dbi->escape($searchParams["firstName"]));
-        }
+            }
         if ($searchParams["lastName"]) {
             $filters[] = sprintf("i.ln = '%s'", $dbi->escape($searchParams["lastName"]));
-        }
+            }
         if ($searchParams["state"]) {
             $filters[] = sprintf("i.state = '%s'", $dbi->escape($searchParams["state"]));
-        }
+            }
         if ($searchParams["city"]) {
             $filters[] = sprintf("i.city = '%s'", $dbi->escape($searchParams["city"]));
-        }
+            }
         if ($searchParams["ageMin"]) {
             $filters[] = sprintf("i.age >= %d", $searchParams["ageMin"]);
-        }
+            }
         if ($searchParams["ageMax"]) {
             $filters[] = sprintf("i.age <= %d", $searchParams["ageMax"]);
-        }
+            }
 
         $sql = sprintf("SELECT f.*, ep.phone, ep.email FROM (SELECT p.pid, GROUP_CONCAT(DISTINCT i.age SEPARATOR 0x01) ages, GROUP_CONCAT(DISTINCT CONCAT_WS('|', i.fn, i.ln) SEPARATOR 0x01) names, GROUP_CONCAT(DISTINCT CONCAT_WS('|', i.city, i.state) SEPARATOR 0x01) locations, GROUP_CONCAT(DISTINCT CONCAT_WS('|', i.rel_1_fn, i.rel_1_ln), 0x01, CONCAT_WS('|', i.rel_2_fn, i.rel_2_ln), 0x01, CONCAT_WS('|', i.rel_3_fn, i.rel_3_ln), 0x01, CONCAT_WS('|', i.rel_4_fn, i.rel_4_ln), 0x01, CONCAT_WS('|', i.rel_5_fn, i.rel_5_ln)) relationships FROM (SELECT i.pid FROM `%s` i WHERE %s GROUP BY i.pid LIMIT %d) p INNER JOIN `%s` i ON p.pid = i.pid GROUP BY p.pid) f LEFT OUTER JOIN `%s` ep ON f.pid = ep.pid GROUP BY f.pid", DB_TBL_IDI_TEASER_DATA, implode(" AND ", $filters), $limit, DB_TBL_IDI_TEASER_DATA, DB_TBL_IDI_TEASER_DATA_EMAIL_PHONE_NUMBER);
         $results = $dbi->query_to_multi_array($sql);
 
         return ["result" => $results];
+        }
     }
-}
