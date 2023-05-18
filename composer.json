@@ -39,7 +39,7 @@
     "scripts": {
         "lint": "phplint --no-cache src/ --exclude=vendor vendor2",
 		"phpcbf": "phpcbf  --standard=PSR12  src/ --ignore=*/vendor/* */vendor2/*",
-        "phpcs": "phpcs --standard=PSR12  --exclude=Generic.Files.LineLength,Generic.WhiteSpace.DisallowSpaceIndent,Generic.WhiteSpace.ScopeIndent,PEAR.WhiteSpace.ScopeIndent,Generic.Functions.FunctionCallArgumentSpacing,PSR1.Files.SideEffects --tab-width=3 src/ tests/ --ignore=*/vendor2/* /vendor/*",
+        "phpcs": "phpcs --standard=PSR12  --exclude=Generic.Files.LineLength,Generic.WhiteSpace.DisallowSpaceIndent,Generic.WhiteSpace.ScopeIndent,PEAR.WhiteSpace.ScopeIndent,Generic.Functions.FunctionCallArgumentSpacing,PSR1.Files.SideEffects --tab-width=3 src/ tests/ --ignore=*/vendor2/* --ignore=*/vendor/",
         "test": "phpunit tests/"
     }
 }
