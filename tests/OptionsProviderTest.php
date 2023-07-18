@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Prophecy\Prophet;
 use Symfony\Component\Console\Input\InputInterface;
 
+
 class OptionsProviderTest extends TestCase
 {
     protected $prophet;
