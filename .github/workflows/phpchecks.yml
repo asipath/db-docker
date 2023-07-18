@@ -2,9 +2,9 @@ name: PHP Validation
 
 on:
   push:
-    branches: [ psr-12 ]
+    branches: [ psr-12a ]
   pull_request:
-    branches: [ psr-12 ]
+    branches: [ psr-12a ]
 
 jobs:
   build:
