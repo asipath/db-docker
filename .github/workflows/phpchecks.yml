@@ -2,9 +2,9 @@ name: PHP Validation
 
 on:
   push:
-    branches: [ psr-12a ]
+    branches: [ psr-12 ]
   pull_request:
-    branches: [ psr-12a ]
+    branches: [ psr-12 ]
 
 jobs:
   build:
@@ -38,3 +38,11 @@ jobs:
 
     - name: Run phpunit
       run: composer test
+
+    - name: Slack Notification
+      uses: act10ns/slack@v1
+      with: 
+        status: starting
+        channel: '#github'
+        message: Starting Build and Deploy...
+      if: always()
