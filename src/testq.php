@@ -33,7 +33,7 @@ class IDI extends \DataSource\Base
 
     
     public $configDPPA = "none";
-    public $configGLBA = "otheruse",
+    public $configGLBA = "otheruse";
     public $configFields = ["name", "dob", "address", "phone", "relationship", "email"];
     public $configFieldsPremium = ["bankruptcy", "property", "professional", "aircraft", "criminal", "lien", "judgment", "isDead"];
     public $useAPI = true;

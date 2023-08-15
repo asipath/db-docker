@@ -45,5 +45,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ::error::Starting Build and Deploy...
+        message: ${{ toJson(github) }}
       if: failure()
