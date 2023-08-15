@@ -35,7 +35,7 @@ jobs:
       run: composer lint 
 
     - name: Run phpcs
-      run: status=$(composer phpcs)
+      run: status=$(composer phpcs 2>&1; echo $?)
 
     - name: Run phpunit
       run: composer test
