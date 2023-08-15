@@ -35,8 +35,8 @@ jobs:
       run: composer lint 
 
     - name: Run phpcs
-      id: version
-      run: echo "TAG_NAME=$(composer phpcs)" >> "$GITHUB_OUTPUT"
+      id: step3
+      run: composer phpcs
 
     - name: Run phpunit
       run: composer test
@@ -46,5 +46,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ${{ steps.version.outputs.TAG_NAME }}
+        message: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       if: failure()
