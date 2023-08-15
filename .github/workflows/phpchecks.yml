@@ -45,5 +45,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ${{ steps.run.outputs.status }}
+        message: ${{ toJson(steps) }}
       if: failure()
