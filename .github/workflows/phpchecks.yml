@@ -35,7 +35,7 @@ jobs:
       run: composer lint 
 
     - name: Run phpcs
-      run: composer phpcs
+      run: status=$(composer phpcs)
 
     - name: Run phpunit
       run: composer test
@@ -45,5 +45,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ${{ toJson(github) }}
+        message: ${{ steps.run.outputs.status }}
       if: failure()
