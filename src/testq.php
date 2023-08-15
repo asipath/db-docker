@@ -11,8 +11,7 @@
 
 namespace DataSource;
 
-class IDI extends \DataSource\Base
-{
+class IDI extends \DataSource\Base {
     
     const SDK_VERSION = 1.0;
     const AUTH_VALIDITY = 1680;
