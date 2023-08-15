@@ -13,15 +13,14 @@ namespace DataSource;
 
 class IDI extends \DataSource\Base
 {
-    const
-        SDK_VERSION = 1.0,
-        AUTH_VALIDITY = 1680,
-        API_ENDPOINT_AUTH = "https://login-api.idicore.com/apiclient",
-        API_ENDPOINT_AUTH_TEST = "https://idiapitunnel.socialcatfish.com/",
-        API_ENDPOINT_SEARCH = "https://api.idicore.com/search/",
-        API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
-
     
+        const SDK_VERSION = 1.0;
+        const AUTH_VALIDITY = 1680;
+        const API_ENDPOINT_AUTH = "https://login-api.idicore.com/apiclient";
+        const API_ENDPOINT_AUTH_TEST = "https://idiapitunnel.socialcatfish.com/";
+        const API_ENDPOINT_SEARCH = "https://api.idicore.com/search/";
+        const API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
+   
     private $client;
     private $clientID;
     private $secretKey;
@@ -31,7 +30,6 @@ class IDI extends \DataSource\Base
     private $lastAuthTime;
     private $authCacheFile;
 
-    
     public $configDPPA = "none";
     public $configGLBA = "otheruse";
     public $configFields = ["name", "dob", "address", "phone", "relationship", "email"];
