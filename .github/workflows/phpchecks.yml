@@ -45,5 +45,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: Starting Build and Deploy...
-      if: always()
+        message: ::error::Starting Build and Deploy...
+      if: failure()

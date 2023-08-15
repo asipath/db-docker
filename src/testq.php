@@ -21,23 +21,23 @@ class IDI extends \DataSource\Base
         API_ENDPOINT_SEARCH = "https://api.idicore.com/search/",
         API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
 
-    private
-    $client,
-    $clientID,
-    $secretKey,
-    $authToken,
-    $authURL,
-    $searchURL,
-    $lastAuthTime,
-    $authCacheFile;
+    
+    private $client;
+    private $clientID;
+    private $secretKey;
+    private $authToken;
+    private $authURL;
+    private $searchURL;
+    private $lastAuthTime;
+    private $authCacheFile;
 
-    public
-    $configDPPA = "none",
-    $configGLBA = "otheruse",
-    $configFields = ["name", "dob", "address", "phone", "relationship", "email"],
-    $configFieldsPremium = ["bankruptcy", "property", "professional", "aircraft", "criminal", "lien", "judgment", "isDead"],
-    $useAPI = true,
-    $useTeaserAPI = false;
+    
+    public $configDPPA = "none";
+    public $configGLBA = "otheruse",
+    public $configFields = ["name", "dob", "address", "phone", "relationship", "email"];
+    public $configFieldsPremium = ["bankruptcy", "property", "professional", "aircraft", "criminal", "lien", "judgment", "isDead"];
+    public $useAPI = true;
+    public $useTeaserAPI = false;
 
     /**
      * IDI Class Constructor
