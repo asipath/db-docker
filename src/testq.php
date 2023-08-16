@@ -8,7 +8,7 @@
  * Version : 1.0
  * Released Date : 04/04/2022
  */
- 
+
  namespace DataSource;
 
 class IDI extends \DataSource\Base
