@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GH_TOKEN: ${{ github.token }}
     steps:
     - uses: actions/checkout@v2
 
@@ -32,6 +33,7 @@ jobs:
       run: composer install --prefer-dist --no-progress --no-suggest
       
     - name: Get link
+      shell: bash
       run:  FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url') >> $GITHUB_ENV
       
     - name: Run lint
@@ -49,5 +51,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: $(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url')
+        message: ${{ env.FOO }}
       if: failure()
