@@ -8,9 +8,11 @@
  * Version : 1.0
  * Released Date : 04/04/2022
  */
+ 
  namespace DataSource;
 
-class IDI extends \DataSource\Base {
+class IDI extends \DataSource\Base
+{
     public const SDK_VERSION = 1.0;
     public const AUTH_VALIDITY = 1680;
     public const API_ENDPOINT_AUTH = "https://login-api.idicore.com/apiclient";
