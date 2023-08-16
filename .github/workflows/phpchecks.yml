@@ -30,7 +30,10 @@ jobs:
     - name: Install dependencies
       if: steps.composer-cache.outputs.cache-hit != 'true'
       run: composer install --prefer-dist --no-progress --no-suggest
-
+      
+    - name: Get link
+      run:  FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url') >> $GITHUB_ENV
+      
     - name: Run lint
       run: composer lint 
 
@@ -40,14 +43,11 @@ jobs:
 
     - name: Run phpunit
       run: composer test
-
-    - name: Get link
-      run:  FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url') >> $GITHUB_ENV
-      
+     
     - name: Slack Notification
       uses: act10ns/slack@v1
       with: 
         status: starting
         channel: '#github'
-        message: ${{ env.FOO }}
+        message: $(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url')
       if: failure()
