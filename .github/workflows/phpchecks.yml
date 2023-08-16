@@ -46,5 +46,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        message: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.job_id }}
       if: failure()
