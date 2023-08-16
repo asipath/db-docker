@@ -49,5 +49,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: "${{ env.FOO }}"
+        message: ${{ env.FOO }}
       if: failure()
