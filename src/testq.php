@@ -8,8 +8,7 @@
  * Version : 1.0
  * Released Date : 04/04/2022
  */
- 
-namespace DataSource;
+ namespace DataSource;
 
 class IDI extends \DataSource\Base {
     public const SDK_VERSION = 1.0;
