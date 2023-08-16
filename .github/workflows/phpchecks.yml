@@ -41,10 +41,13 @@ jobs:
     - name: Run phpunit
       run: composer test
 
+    - name: Get link
+      run:  echo "FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url, (.steps[] | select(.name == "Run Cypress Tests") | "#step:\(.number):1")' | tr -d "\n")" >> $GITHUB_ENV
+      
     - name: Slack Notification
       uses: act10ns/slack@v1
       with: 
         status: starting
         channel: '#github'
-        message: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.job_id }}
+        message: "${{ env.FOO }}"
       if: failure()
