@@ -12,13 +12,12 @@
 namespace DataSource;
 
 class IDI extends \DataSource\Base {
-    
-    const SDK_VERSION = 1.0;
-    const AUTH_VALIDITY = 1680;
-    const API_ENDPOINT_AUTH = "https://login-api.idicore.com/apiclient";
-    const API_ENDPOINT_AUTH_TEST = "https://idiapitunnel.socialcatfish.com/";
-    const API_ENDPOINT_SEARCH = "https://api.idicore.com/search/";
-    const API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
+    public const SDK_VERSION = 1.0;
+    public const AUTH_VALIDITY = 1680;
+    public const API_ENDPOINT_AUTH = "https://login-api.idicore.com/apiclient";
+    public const API_ENDPOINT_AUTH_TEST = "https://idiapitunnel.socialcatfish.com/";
+    public const API_ENDPOINT_SEARCH = "https://api.idicore.com/search/";
+    public const API_ENDPOINT_SEARCH_TEST = "https://idiapitunnel.socialcatfish.com/";
    
     private $client;
     private $clientID;
