@@ -34,7 +34,7 @@ jobs:
       
     - name: Get link
       shell: bash
-      run:  FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url') >> $GITHUB_ENV
+      run:  echo "FOO=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json jobs --jq '.jobs[] | select(.name == "${{ github.job }}") | .url')" >> $GITHUB_ENV
       
     - name: Run lint
       run: composer lint 
@@ -51,5 +51,5 @@ jobs:
       with: 
         status: starting
         channel: '#github'
-        message: ${{ env.FOO }}
+        message: echo "${{ env.FOO }}"
       if: failure()
